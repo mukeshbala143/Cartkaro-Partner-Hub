@@ -1,0 +1,1 @@
+ /Users/mbala/Desktop/cartkaro_partner_hub/.dart_tool/flutter_build/3e12dd25e506d599d7a2d9d636f95f7a/native_assets.json: 
