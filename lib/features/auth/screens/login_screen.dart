@@ -208,27 +208,35 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: kBrandDark,
       body: Stack(
-        children: [
-          // Animated background rectangles
-          ..._buildFloatingRects(size),
+  children: [
+    ..._buildFloatingRects(size),
 
-          // Main column
-          SafeArea(
-            child: Column(
-              children: [
-                // Hero top section
-                Expanded(child: _buildHeroSection()),
-                // Sliding form card
-                SlideTransition(
-                  position: _formSlide,
-                  child: FadeTransition(
-                    opacity: _formFade,
-                    child: _buildFormCard(size),
-                  ),
+    SafeArea(
+      child: SingleChildScrollView(
+        keyboardDismissBehavior:
+            ScrollViewKeyboardDismissBehavior.onDrag,
+        child: SizedBox(
+          height: size.height -
+              MediaQuery.of(context).padding.top,
+          child: Column(
+            children: [
+              Expanded(
+                child: _buildHeroSection(),
+              ),
+
+              SlideTransition(
+                position: _formSlide,
+                child: FadeTransition(
+                  opacity: _formFade,
+                  child: _buildFormCard(size),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -376,7 +384,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   // ── Form card ─────────────────────────────────────────────────
   Widget _buildFormCard(Size size) {
-    return Container(
+  return SingleChildScrollView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+    child: Container(
       width: size.width,
       decoration: const BoxDecoration(
         color: kWhite,
@@ -386,29 +396,40 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         ),
       ),
       padding: EdgeInsets.fromLTRB(
-        28, 28, 28, MediaQuery.of(context).viewInsets.bottom + 32),
+        28,
+        28,
+        28,
+        MediaQuery.of(context).viewInsets.bottom + 20,
+      ),
       child: FadeTransition(
         opacity: _stepFade,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Step progress bar
+            
             if (_step != _Step.success) _buildStepBar(),
-            if (_step != _Step.success) const SizedBox(height: 20),
 
-            // Error
-            if (_error.isNotEmpty) _buildError(),
+            if (_step != _Step.success)
+              const SizedBox(height: 20),
 
-            // Step content
-            if (_step == _Step.phone) _buildPhoneStep(),
-            if (_step == _Step.otp) _buildOtpStep(),
-            if (_step == _Step.success) _buildSuccessStep(),
+            if (_error.isNotEmpty)
+              _buildError(),
+
+            if (_step == _Step.phone)
+              _buildPhoneStep(),
+
+            if (_step == _Step.otp)
+              _buildOtpStep(),
+
+            if (_step == _Step.success)
+              _buildSuccessStep(),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildStepBar() {
     return Row(children: [
@@ -476,7 +497,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           icon: LucideIcons.arrowRight,
           onTap: _sendOtp,
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 12),
         _buildStatsRow(),
       ],
     );
