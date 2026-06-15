@@ -1,1 +1,13 @@
+
+# Flutter
+build/
+.dart_tool/
+
+# Android build
+android/.gradle/
+
+# Mac
 .DS_Store
+
+# VS Code
+.vscode/
