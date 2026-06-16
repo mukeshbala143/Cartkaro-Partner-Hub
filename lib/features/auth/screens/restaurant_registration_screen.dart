@@ -155,7 +155,7 @@ class _RestaurantRegistrationScreenState
     if (!serviceEnabled) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('GPS band hai. Settings se ON karo.')),
+          const SnackBar(content: Text('Your GPS is disabled, Please enable it.')),
         );
         await Geolocator.openLocationSettings();
       }
@@ -195,7 +195,7 @@ class _RestaurantRegistrationScreenState
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('📍 Location fetch ho rahi hai...')),
+        const SnackBar(content: Text('📍 Fatching Your Location.')),
       );
     }
 
@@ -232,7 +232,7 @@ class _RestaurantRegistrationScreenState
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Location aur address fill ho gaya!'),
+                content: Text('✅ Location and address filled.'),
                 backgroundColor: kSuccessColor,
               ),
             );
@@ -242,7 +242,7 @@ class _RestaurantRegistrationScreenState
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Location mili! Address auto-fill nahi hua.'),
+              content: Text('Location and address not filled.'),
             ),
           );
         }
@@ -255,7 +255,7 @@ class _RestaurantRegistrationScreenState
           _lngCtrl.text = lastPos.longitude.toStringAsFixed(6);
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Last known location use ki gayi.')),
+          const SnackBar(content: Text('We use last known location.')),
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -296,6 +296,22 @@ class _RestaurantRegistrationScreenState
     if (!isTestingMode && form != null && !form.validate()) {
       return;
     }
+
+      // Step 2 GPS Location Mandatory
+  if (_currentStep == 1 &&
+      (_latCtrl.text.isEmpty || _lngCtrl.text.isEmpty)) {
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Please use current location first",
+        ),
+        backgroundColor: kErrorColor,
+      ),
+    );
+
+    return;
+  }
 
     if (_currentStep == 7 && !_agreementAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2839,7 +2855,8 @@ class _LocationPickerCard extends StatelessWidget {
                         fontSize: 14,
                         color: kTextPrimary)),
               ),
-              
+              Text(' *',
+                  style: TextStyle(color: kErrorColor, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 14),
