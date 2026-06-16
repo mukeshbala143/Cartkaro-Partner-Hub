@@ -5,7 +5,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'dashboard_screen.dart';
 
 class DashboardLayout extends StatefulWidget {
-  const DashboardLayout({Key? key}) : super(key: key);
+  final String businessType;
+
+  const DashboardLayout({
+    Key? key,
+    required this.businessType,
+  }) : super(key: key);
 
   @override
   State<DashboardLayout> createState() => _DashboardLayoutState();
@@ -14,16 +19,49 @@ class DashboardLayout extends StatefulWidget {
 class _DashboardLayoutState extends State<DashboardLayout> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const DashboardScreen(),
-    const Center(child: Text("Products Management")),
-    const Center(child: Text("Orders Management")),
-    const Center(child: Text("Earnings")),
-  ];
+  String get itemName {
+    if (widget.businessType == "restaurant") return "Menu";
+    if (widget.businessType == "medical") return "Medicines";
+    return "Products";
+  }
+
+  String get businessName {
+    if (widget.businessType == "restaurant") return "Restaurant";
+    if (widget.businessType == "medical") return "Medical";
+    return "Store";
+  }
+
+  // Nav items config — icon, active icon, label
+  List<_NavItem> get _navItems => [
+        const _NavItem(
+          icon: LucideIcons.layoutDashboard,
+          label: 'Home',
+        ),
+        _NavItem(
+          icon: LucideIcons.package,
+          label: itemName,
+        ),
+        const _NavItem(
+          icon: LucideIcons.clipboardList,
+          label: 'Orders',
+        ),
+        const _NavItem(
+          icon: LucideIcons.wallet,
+          label: 'Earnings',
+        ),
+      ];
+
+  List<Widget> get _pages => [
+        DashboardScreen(businessType: widget.businessType),
+        Center(child: Text("$itemName Management")),
+        const Center(child: Text("Orders Management")),
+        const Center(child: Text("Earnings")),
+      ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.kBackground,
       body: Responsive(
         mobile: Column(
           children: [
@@ -44,78 +82,270 @@ class _DashboardLayoutState extends State<DashboardLayout> {
         ),
       ),
       bottomNavigationBar: Responsive.isMobile(context)
-          ? BottomNavigationBar(
-              currentIndex: _selectedIndex,
-              selectedItemColor: AppColors.kPrimary, // Updated to brand color
-              unselectedItemColor: AppColors.kLightText,
-              onTap: (index) => setState(() => _selectedIndex = index),
-              type: BottomNavigationBarType.fixed,
-              items: const [
-                BottomNavigationBarItem(icon: Icon(LucideIcons.layoutDashboard), label: 'Home'),
-                BottomNavigationBarItem(icon: Icon(LucideIcons.package), label: 'Products'),
-                BottomNavigationBarItem(icon: Icon(LucideIcons.clipboardList), label: 'Orders'),
-                BottomNavigationBarItem(icon: Icon(LucideIcons.wallet), label: 'Earnings'),
-              ],
-            )
+          ? _buildPremiumBottomNav()
           : null,
     );
   }
 
+  // ── Premium Bottom Nav ─────────────────────────────────────────
+  // Floating pill style with centered active indicator — not a standard
+  // BottomNavigationBar, built from scratch for full control.
+  Widget _buildPremiumBottomNav() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.kWhite,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(
+              _navItems.length,
+              (i) => _buildNavTab(i),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavTab(int index) {
+    final item = _navItems[index];
+    final isActive = _selectedIndex == index;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        padding: EdgeInsets.symmetric(
+          horizontal: isActive ? 18 : 14,
+          vertical: 10,
+        ),
+        decoration: BoxDecoration(
+          color: isActive
+              ? AppColors.kPrimary.withOpacity(0.10)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: Icon(
+                item.icon,
+                key: ValueKey('$index-$isActive'),
+                size: 20,
+                color: isActive
+                    ? AppColors.kPrimary
+                    : AppColors.kLightText,
+              ),
+            ),
+            // Label slides in when active
+            AnimatedSize(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              child: isActive
+                  ? Row(
+                      children: [
+                        const SizedBox(width: 7),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.kPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Sidebar (tablet/desktop) ───────────────────────────────────
   Widget _buildSidebar() {
     return Container(
       width: 260,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.kWhite,
-        border: Border(right: BorderSide(color: AppColors.kBorder)),
+        border: Border(
+          right: BorderSide(
+            color: AppColors.kBorder.withOpacity(0.7),
+          ),
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
-          ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: AppColors.kPrimary, // Updated
-              child: Icon(LucideIcons.store, color: Colors.white),
+          const SizedBox(height: 36),
+          // Brand header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.kPrimary,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(
+                    LucideIcons.store,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'My $businessName',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.kDarkText,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const Text(
+                      'Partner',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.kLightText,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            title: const Text("My Store", style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text("Partner"),
           ),
-          const Divider(height: 32),
-          _SidebarItem(icon: LucideIcons.layoutDashboard, title: "Dashboard", isSelected: _selectedIndex == 0, onTap: () => setState(() => _selectedIndex = 0)),
-          _SidebarItem(icon: LucideIcons.package, title: "Products", isSelected: _selectedIndex == 1, onTap: () => setState(() => _selectedIndex = 1)),
-          _SidebarItem(icon: LucideIcons.clipboardList, title: "Orders", isSelected: _selectedIndex == 2, onTap: () => setState(() => _selectedIndex = 2)),
-          _SidebarItem(icon: LucideIcons.wallet, title: "Earnings", isSelected: _selectedIndex == 3, onTap: () => setState(() => _selectedIndex = 3)),
+          const SizedBox(height: 28),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'MAIN MENU',
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.kLightText.withOpacity(0.6),
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ..._navItems.asMap().entries.map(
+                (e) => _SidebarItem(
+                  icon: e.value.icon,
+                  title: e.value.label,
+                  isSelected: _selectedIndex == e.key,
+                  onTap: () => setState(() => _selectedIndex = e.key),
+                ),
+              ),
         ],
       ),
     );
   }
 }
 
+// ── Nav Item Model ─────────────────────────────────────────────────
+class _NavItem {
+  final IconData icon;
+  final String label;
+  const _NavItem({required this.icon, required this.label});
+}
+
+// ── Sidebar Item ──────────────────────────────────────────────────
 class _SidebarItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _SidebarItem({required this.icon, required this.title, required this.isSelected, required this.onTap});
+  const _SidebarItem({
+    required this.icon,
+    required this.title,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.kPrimary.withOpacity(0.1) : Colors.transparent, // Updated
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: isSelected ? AppColors.kPrimary : AppColors.kLightText), // Updated
-        title: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? AppColors.kPrimary : AppColors.kDarkText, // Updated
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.kPrimary.withOpacity(0.09)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
         ),
-        onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.kPrimary.withOpacity(0.13)
+                    : AppColors.kBackground,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 17,
+                color: isSelected
+                    ? AppColors.kPrimary
+                    : AppColors.kLightText,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight:
+                    isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected
+                    ? AppColors.kPrimary
+                    : AppColors.kDarkText,
+                letterSpacing: -0.2,
+              ),
+            ),
+            if (isSelected) ...[
+              const Spacer(),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: AppColors.kPrimary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
