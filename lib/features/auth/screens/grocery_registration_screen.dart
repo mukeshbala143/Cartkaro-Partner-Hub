@@ -153,7 +153,7 @@ class _GroceryRegistrationScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('GPS band hai. Settings se ON karo.'),
+            content: Text('Your GPS is disabled, Please enable it.'),
           ),
         );
         await Geolocator.openLocationSettings();
@@ -196,7 +196,7 @@ class _GroceryRegistrationScreenState
     // Step 3: Fetching indicator
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('📍 Location fetch ho rahi hai...')),
+        const SnackBar(content: Text('📍 Fatching Your Location.')),
       );
     }
 
@@ -235,7 +235,7 @@ class _GroceryRegistrationScreenState
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Location aur address fill ho gaya!'),
+                content: Text('✅ Location and address filled.'),
                 backgroundColor: kSuccessColor,
               ),
             );
@@ -246,7 +246,7 @@ class _GroceryRegistrationScreenState
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Location mili! Address auto-fill nahi hua.'),
+              content: Text('Location and address not filled.'),
             ),
           );
         }
@@ -261,7 +261,7 @@ class _GroceryRegistrationScreenState
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Last known location use ki gayi.'),
+            content: Text('We use last known location.'),
           ),
         );
       } else if (mounted) {
@@ -303,6 +303,22 @@ class _GroceryRegistrationScreenState
     if (!isTestingMode && form != null && !form.validate()) {
       return;
     }
+
+      // Step 2 GPS Location Mandatory
+  if (_currentStep == 1 &&
+      (_latCtrl.text.isEmpty || _lngCtrl.text.isEmpty)) {
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Please use current location first",
+        ),
+        backgroundColor: kErrorColor,
+      ),
+    );
+
+    return;
+  }
 
     if (_currentStep == 7 && !_agreementAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2993,7 +3009,9 @@ class _LocationPickerCard extends StatelessWidget {
                   ),
                 ),
               ),
-              
+              Text(' *',
+                  style: TextStyle(
+                      color: kErrorColor, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 14),
