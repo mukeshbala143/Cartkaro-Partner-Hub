@@ -37,9 +37,12 @@ class FloatRect {
   final double w, h, x, y, radius, opacity;
   final Duration delay;
   const FloatRect({
-    required this.w, required this.h,
-    required this.x, required this.y,
-    required this.radius, required this.opacity,
+    required this.w,
+    required this.h,
+    required this.x,
+    required this.y,
+    required this.radius,
+    required this.opacity,
     required this.delay,
   });
 }
@@ -54,7 +57,8 @@ const List<FloatRect> kFloatRects = [
 // ══════════════════════════════════════════════════════════════════
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
-  @override State<LoginScreen> createState() => _LoginScreenState();
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 enum _Step { phone, otp, success }
@@ -71,9 +75,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   final List<FocusNode> _otpFocus = List.generate(6, (_) => FocusNode());
 
   // Animations
-  late AnimationController _heroCtrl;   // bg rect float (looping)
-  late AnimationController _formCtrl;   // form slide-up
-  late AnimationController _stepCtrl;   // step transition
+  late AnimationController _heroCtrl;
+  late AnimationController _formCtrl;
+  late AnimationController _stepCtrl;
 
   late Animation<Offset> _formSlide;
   late Animation<double> _formFade;
@@ -155,13 +159,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       setState(() => _error = 'Use 1111111111 for testing');
       return;
     }
-    setState(() { _loading = true; _error = ''; });
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
     await Future.delayed(const Duration(milliseconds: 900));
     _transitionTo(_Step.otp);
-    setState(() { _loading = false; });
+    setState(() => _loading = false);
     _startResend();
-    Future.delayed(const Duration(milliseconds: 120),
-        () => _otpFocus[0].requestFocus());
+    Future.delayed(
+        const Duration(milliseconds: 120), () => _otpFocus[0].requestFocus());
   }
 
   Future<void> _verifyOtp() async {
@@ -174,16 +181,22 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       setState(() => _error = 'Wrong OTP. Use 123456 for testing');
       return;
     }
-    setState(() { _loading = true; _error = ''; });
+    setState(() {
+      _loading = true;
+      _error = '';
+    });
     await Future.delayed(const Duration(milliseconds: 800));
     _resendTimer?.cancel();
     _transitionTo(_Step.success);
-    setState(() { _loading = false; });
+    setState(() => _loading = false);
   }
 
   void _transitionTo(_Step next) {
     _stepCtrl.reverse().then((_) {
-      setState(() { _step = next; _error = ''; });
+      setState(() {
+        _step = next;
+        _error = '';
+      });
       _stepCtrl.forward();
     });
   }
@@ -198,7 +211,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _resendTimer?.cancel();
     setState(() => _resendSec = 30);
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_resendSec <= 0) { _resendTimer?.cancel(); return; }
+      if (_resendSec <= 0) {
+        _resendTimer?.cancel();
+        return;
+      }
       setState(() => _resendSec--);
     });
   }
@@ -207,36 +223,37 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
+    // KEY FIX: Use Scaffold with resizeToAvoidBottomInset: true (default)
+    // and let the Column use Expanded for hero + intrinsic for form card.
+    // No fixed height SizedBox — that's what caused the overflow.
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: kBrandDark,
       body: Stack(
-  children: [
-    ..._buildFloatingRects(size),
+        children: [
+          // Floating bg rects — purely decorative, don't affect layout
+          ..._buildFloatingRects(size),
 
-    SafeArea(
-      child: SingleChildScrollView(
-        keyboardDismissBehavior:
-            ScrollViewKeyboardDismissBehavior.onDrag,
-        child: SizedBox(
-          height: size.height -
-              MediaQuery.of(context).padding.top,
-          child: Column(
-            children: [
-              Expanded(
-                child: _buildHeroSection(),
-              ),
-
-              SlideTransition(
-                position: _formSlide,
-                child: FadeTransition(
-                  opacity: _formFade,
-                  child: _buildFormCard(size),
-                      ),
-                    ),
-                  ],
+          // Main layout: full screen column inside SafeArea
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Hero section — takes all available space above the card
+                Expanded(
+                  child: _buildHeroSection(),
                 ),
-              ),
+
+                // Form card — slides up, hugs content, keyboard pushes it up
+                // naturally because Scaffold resizes its body
+                SlideTransition(
+                  position: _formSlide,
+                  child: FadeTransition(
+                    opacity: _formFade,
+                    child: _buildFormCard(size),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -283,84 +300,96 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     }).toList();
   }
 
-  // ── Hero top ─────────────────────────────────────────────────
+  // ── Hero top ──────────────────────────────────────────────────
   Widget _buildHeroSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          
-              // Logo row
-              Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.asset(
-                      "assets/logo.png",
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-
-                  const SizedBox(width: 12),
-
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'CartKaro',
-                        style: TextStyle(
-                          color: kWhite,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-
-                      Text(
-                        'Partner Hub',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.45),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-          // Headline
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(fontFamily: 'Sora',
-                  fontSize: 36, fontWeight: FontWeight.w800,
-                  letterSpacing: -1.2, height: 1.07),
+    return SingleChildScrollView(
+      // Hero scrolls if needed on very small screens
+      physics: const NeverScrollableScrollPhysics(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 28, 28, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Logo row
+            Row(
               children: [
-                const TextSpan(text: 'Sell more,\nstress ', style: TextStyle(color: kWhite)),
-                const TextSpan(text: 'less.', style: TextStyle(color: kAccentBlue)),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    "assets/logo.png",
+                    width: 52,
+                    height: 52,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'CartKaro',
+                      style: TextStyle(
+                        color: kWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    Text(
+                      'Partner Hub',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.45),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ),
-          const SizedBox(height: 10),
-          Text('Your store. Your rules.\nStart selling in minutes.',
-            style: TextStyle(color: Colors.white.withOpacity(0.52),
-                fontSize: 14.5, height: 1.6)),
-          const SizedBox(height: 24),
 
-          // Trust pills
-          Row(
-            children: [
-              _trustPill(LucideIcons.zap, '10k+ Sellers'),
-              const SizedBox(width: 10),
-              _trustPill(LucideIcons.shieldCheck, 'Secure Login'),
-            ],
-          ),
-        ],
+            const SizedBox(height: 32),
+
+            // Headline
+            RichText(
+              text: const TextSpan(
+                style: TextStyle(
+                    fontFamily: 'Sora',
+                    fontSize: 36,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -1.2,
+                    height: 1.07),
+                children: [
+                  TextSpan(
+                      text: 'Sell more,\nstress ',
+                      style: TextStyle(color: kWhite)),
+                  TextSpan(
+                      text: 'less.',
+                      style: TextStyle(color: kAccentBlue)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your store. Your rules.\nStart selling in minutes.',
+              style: TextStyle(
+                  color: Colors.white.withOpacity(0.52),
+                  fontSize: 14.5,
+                  height: 1.6),
+            ),
+            const SizedBox(height: 24),
+
+            // Trust pills
+            Row(
+              children: [
+                _trustPill(LucideIcons.zap, '10k+ Sellers'),
+                const SizedBox(width: 10),
+                _trustPill(LucideIcons.shieldCheck, 'Secure Login'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -376,17 +405,18 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         Icon(icon, color: kAccentBlue, size: 13),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: kWhite,
-            fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(label,
+            style: const TextStyle(
+                color: kWhite, fontSize: 12, fontWeight: FontWeight.w600)),
       ]),
     );
   }
 
   // ── Form card ─────────────────────────────────────────────────
+  // KEY FIX: No SingleChildScrollView here — Scaffold already resizes
+  // the body when keyboard appears. The card just sizes to its content.
   Widget _buildFormCard(Size size) {
-  return SingleChildScrollView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    child: Container(
+    return Container(
       width: size.width,
       decoration: const BoxDecoration(
         color: kWhite,
@@ -395,11 +425,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           topRight: Radius.circular(28),
         ),
       ),
+      // KEY FIX: Bottom padding accounts for safe area (home indicator)
+      // but NOT for keyboard — Scaffold handles that via resizeToAvoidBottomInset
       padding: EdgeInsets.fromLTRB(
         28,
         28,
         28,
-        MediaQuery.of(context).viewInsets.bottom + 20,
+        MediaQuery.of(context).padding.bottom + 20,
       ),
       child: FadeTransition(
         opacity: _stepFade,
@@ -407,47 +439,36 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            
             if (_step != _Step.success) _buildStepBar(),
-
-            if (_step != _Step.success)
-              const SizedBox(height: 20),
-
-            if (_error.isNotEmpty)
-              _buildError(),
-
-            if (_step == _Step.phone)
-              _buildPhoneStep(),
-
-            if (_step == _Step.otp)
-              _buildOtpStep(),
-
-            if (_step == _Step.success)
-              _buildSuccessStep(),
+            if (_step != _Step.success) const SizedBox(height: 20),
+            if (_error.isNotEmpty) _buildError(),
+            if (_step == _Step.phone) _buildPhoneStep(),
+            if (_step == _Step.otp) _buildOtpStep(),
+            if (_step == _Step.success) _buildSuccessStep(),
           ],
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildStepBar() {
     return Row(children: [
       Expanded(flex: 2, child: _stepSegment(true)),
       const SizedBox(width: 6),
-      Expanded(flex: _step == _Step.otp ? 2 : 1,
-        child: _stepSegment(_step == _Step.otp)),
+      Expanded(
+          flex: _step == _Step.otp ? 2 : 1,
+          child: _stepSegment(_step == _Step.otp)),
     ]);
   }
 
   Widget _stepSegment(bool active) => AnimatedContainer(
-    duration: const Duration(milliseconds: 350),
-    height: 4,
-    decoration: BoxDecoration(
-      color: active ? kBrand : kBorder,
-      borderRadius: BorderRadius.circular(2),
-    ),
-  );
+        duration: const Duration(milliseconds: 350),
+        height: 4,
+        decoration: BoxDecoration(
+          color: active ? kBrand : kBorder,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      );
 
   Widget _buildError() {
     return Container(
@@ -459,11 +480,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         border: Border.all(color: const Color(0xFFFECACA)),
       ),
       child: Row(children: [
-        const Icon(LucideIcons.alertCircle, color: Color(0xFFE53E3E), size: 16),
+        const Icon(LucideIcons.alertCircle,
+            color: Color(0xFFE53E3E), size: 16),
         const SizedBox(width: 8),
-        Expanded(child: Text(_error,
-          style: const TextStyle(color: Color(0xFFC53030),
-              fontSize: 12.5, fontWeight: FontWeight.w600))),
+        Expanded(
+            child: Text(_error,
+                style: const TextStyle(
+                    color: Color(0xFFC53030),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600))),
       ]),
     );
   }
@@ -474,22 +499,32 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Enter your\nmobile number',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-              color: kBodyText, letterSpacing: -0.5, height: 1.2)),
+        const Text(
+          'Enter your\nmobile number',
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: kBodyText,
+              letterSpacing: -0.5,
+              height: 1.2),
+        ),
         const SizedBox(height: 5),
-        const Text('We\'ll send a one-time code to verify',
-          style: TextStyle(fontSize: 13.5, color: kSubText, height: 1.5)),
+        const Text(
+          "We'll send a one-time code to verify",
+          style: TextStyle(fontSize: 13.5, color: kSubText, height: 1.5),
+        ),
         const SizedBox(height: 22),
         _fieldLabel('Mobile Number'),
         const SizedBox(height: 7),
         _buildPhoneField(),
         const SizedBox(height: 8),
         Row(children: [
-          Icon(LucideIcons.info, size: 13, color: kSubText.withOpacity(0.7)),
+          Icon(LucideIcons.info,
+              size: 13, color: kSubText.withOpacity(0.7)),
           const SizedBox(width: 5),
           Text('Works with any Indian mobile number',
-            style: TextStyle(fontSize: 11.5, color: kSubText.withOpacity(0.75))),
+              style: TextStyle(
+                  fontSize: 11.5, color: kSubText.withOpacity(0.75))),
         ]),
         const SizedBox(height: 22),
         _buildCtaButton(
@@ -515,18 +550,24 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         GestureDetector(
           onTap: _showCountryPicker,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: kBorder, width: 1.5)),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: const BoxDecoration(
+              border:
+                  Border(right: BorderSide(color: kBorder, width: 1.5)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(_country.flag, style: const TextStyle(fontSize: 20)),
+              Text(_country.flag,
+                  style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 6),
               Text(_country.code,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700,
-                    color: kBodyText)),
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: kBodyText)),
               const SizedBox(width: 4),
-              const Icon(LucideIcons.chevronDown, size: 13, color: kSubText),
+              const Icon(LucideIcons.chevronDown,
+                  size: 13, color: kSubText),
             ]),
           ),
         ),
@@ -537,14 +578,20 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             keyboardType: TextInputType.phone,
             maxLength: 10,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700,
-                color: kBodyText, letterSpacing: 0.4),
+            style: const TextStyle(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                color: kBodyText,
+                letterSpacing: 0.4),
             decoration: InputDecoration(
               hintText: '10-digit number',
-              hintStyle: TextStyle(color: kSubText.withOpacity(0.5),
-                  fontWeight: FontWeight.w400, fontSize: 14.5),
+              hintStyle: TextStyle(
+                  color: kSubText.withOpacity(0.5),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 14.5),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 15),
               counterText: '',
             ),
           ),
@@ -566,17 +613,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Widget _stat(String val, String label) => Expanded(
-    child: Column(children: [
-      Text(val, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800,
-          color: kBodyText)),
-      const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 11, color: kSubText,
-          fontWeight: FontWeight.w600)),
-    ]),
-  );
+        child: Column(children: [
+          Text(val,
+              style: const TextStyle(
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w800,
+                  color: kBodyText)),
+          const SizedBox(height: 2),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11,
+                  color: kSubText,
+                  fontWeight: FontWeight.w600)),
+        ]),
+      );
 
   Widget _vertDivider() => Container(
-    width: 1, height: 32, color: kBorder, margin: const EdgeInsets.symmetric(horizontal: 4));
+      width: 1,
+      height: 32,
+      color: kBorder,
+      margin: const EdgeInsets.symmetric(horizontal: 4));
 
   // ── OTP step ─────────────────────────────────────────────────
   Widget _buildOtpStep() {
@@ -584,23 +640,37 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('Verify OTP',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800,
-              color: kBodyText, letterSpacing: -0.5)),
+        const Text(
+          'Verify OTP',
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: kBodyText,
+              letterSpacing: -0.5),
+        ),
         const SizedBox(height: 5),
-        Text('Code sent to ${_country.code} ${_phoneCtrl.text}',
-          style: const TextStyle(fontSize: 13.5, color: kSubText)),
+        Text(
+          'Code sent to ${_country.code} ${_phoneCtrl.text}',
+          style: const TextStyle(fontSize: 13.5, color: kSubText),
+        ),
         const SizedBox(height: 22),
         _fieldLabel('6-Digit Code'),
         const SizedBox(height: 8),
         _buildOtpBoxes(),
         const SizedBox(height: 8),
         Row(children: [
-          Icon(LucideIcons.clock, size: 13, color: kSubText.withOpacity(0.7)),
+          Icon(LucideIcons.clock,
+              size: 13, color: kSubText.withOpacity(0.7)),
           const SizedBox(width: 5),
-          Text(_resendSec > 0 ? 'Resend in ${_resendSec}s' : 'Resend OTP',
-            style: TextStyle(fontSize: 11.5, color: kSubText.withOpacity(0.8),
-                fontWeight: FontWeight.w600)),
+          Text(
+            _resendSec > 0
+                ? 'Resend in ${_resendSec}s'
+                : 'Resend OTP',
+            style: TextStyle(
+                fontSize: 11.5,
+                color: kSubText.withOpacity(0.8),
+                fontWeight: FontWeight.w600),
+          ),
         ]),
         const SizedBox(height: 22),
         _buildCtaButton(
@@ -611,9 +681,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 12),
         TextButton.icon(
           onPressed: _goBack,
-          icon: const Icon(LucideIcons.arrowLeft, size: 15, color: kSubText),
-          label: const Text('Change number',
-            style: TextStyle(fontSize: 13.5, color: kSubText, fontWeight: FontWeight.w600)),
+          icon: const Icon(LucideIcons.arrowLeft,
+              size: 15, color: kSubText),
+          label: const Text(
+            'Change number',
+            style: TextStyle(
+                fontSize: 13.5,
+                color: kSubText,
+                fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );
@@ -621,36 +697,41 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   Widget _buildOtpBoxes() {
     return Row(
-      children: List.generate(6, (i) => Expanded(
-        child: Container(
-          height: 52,
-          margin: EdgeInsets.only(right: i < 5 ? 8 : 0),
-          decoration: BoxDecoration(
-            color: kInputBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: kBorder, width: 1.5),
-          ),
-          child: RawKeyboardListener(
-            focusNode: FocusNode(),
-            onKey: (e) => _onOtpKey(e, i),
-            child: TextField(
-              controller: _otpCtrl[i],
-              focusNode: _otpFocus[i],
-              keyboardType: TextInputType.number,
-              maxLength: 1,
-              textAlign: TextAlign.center,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              onChanged: (v) => _onOtpChanged(v, i),
-              style: const TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.w800, color: kBrand),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                counterText: '',
+      children: List.generate(
+        6,
+        (i) => Expanded(
+          child: Container(
+            height: 52,
+            margin: EdgeInsets.only(right: i < 5 ? 8 : 0),
+            decoration: BoxDecoration(
+              color: kInputBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: kBorder, width: 1.5),
+            ),
+            child: RawKeyboardListener(
+              focusNode: FocusNode(),
+              onKey: (e) => _onOtpKey(e, i),
+              child: TextField(
+                controller: _otpCtrl[i],
+                focusNode: _otpFocus[i],
+                keyboardType: TextInputType.number,
+                maxLength: 1,
+                textAlign: TextAlign.center,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (v) => _onOtpChanged(v, i),
+                style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: kBrand),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  counterText: '',
+                ),
               ),
             ),
           ),
         ),
-      )),
+      ),
     );
   }
 
@@ -660,28 +741,36 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 16),
-        // Success circle
         TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: 1),
           duration: const Duration(milliseconds: 500),
           curve: Curves.elasticOut,
-          builder: (_, v, child) => Transform.scale(scale: v, child: child),
+          builder: (_, v, child) =>
+              Transform.scale(scale: v, child: child),
           child: Container(
             width: 72,
             height: 72,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0FFF4),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF0FFF4),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.check, size: 32, color: Color(0xFF22C55E)),
+            child: const Icon(LucideIcons.check,
+                size: 32, color: Color(0xFF22C55E)),
           ),
         ),
         const SizedBox(height: 20),
-        const Text("You're in!",
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: kBodyText)),
+        const Text(
+          "You're in!",
+          style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: kBodyText),
+        ),
         const SizedBox(height: 6),
-        const Text('Welcome back to CartKaro',
-          style: TextStyle(fontSize: 14, color: kSubText)),
+        const Text(
+          'Welcome back to CartKaro',
+          style: TextStyle(fontSize: 14, color: kSubText),
+        ),
         const SizedBox(height: 28),
         _buildCtaButton(
           label: 'Go to Dashboard',
@@ -694,9 +783,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   // ── Shared widgets ────────────────────────────────────────────
-  Widget _fieldLabel(String text) => Text(text,
-    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-        color: kBodyText, letterSpacing: 0.3));
+  Widget _fieldLabel(String text) => Text(
+        text,
+        style: const TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            color: kBodyText,
+            letterSpacing: 0.3),
+      );
 
   Widget _buildCtaButton({
     required String label,
@@ -722,17 +816,23 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         child: Center(
           child: _loading
               ? const SizedBox(
-                  width: 22, height: 22,
+                  width: 22,
+                  height: 22,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation(kWhite)),
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation(kWhite)),
                 )
               : Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(label,
-                    style: const TextStyle(fontSize: 15.5,
-                        fontWeight: FontWeight.w700, color: kWhite, letterSpacing: 0.1)),
+                      style: const TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w700,
+                          color: kWhite,
+                          letterSpacing: 0.1)),
                   const SizedBox(width: 10),
-                  Icon(icon, size: 17, color: Colors.white.withOpacity(0.8)),
+                  Icon(icon,
+                      size: 17,
+                      color: Colors.white.withOpacity(0.8)),
                 ]),
         ),
       ),
@@ -754,44 +854,64 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         ),
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(width: 36, height: 4,
-            decoration: BoxDecoration(color: kBorder, borderRadius: BorderRadius.circular(2))),
+          Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: kBorder,
+                  borderRadius: BorderRadius.circular(2))),
           const SizedBox(height: 18),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text('Select country',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: kBodyText)),
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: kBodyText)),
             ),
           ),
           const SizedBox(height: 12),
           ...kCountries.map((c) {
             final isSel = c.code == _country.code;
             return InkWell(
-              onTap: () { setState(() => _country = c); Navigator.pop(context); },
+              onTap: () {
+                setState(() => _country = c);
+                Navigator.pop(context);
+              },
               child: Container(
                 color: isSel ? const Color(0xFFF0F5FF) : null,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 14),
                 child: Row(children: [
-                  Text(c.flag, style: const TextStyle(fontSize: 24)),
+                  Text(c.flag,
+                      style: const TextStyle(fontSize: 24)),
                   const SizedBox(width: 14),
-                  Expanded(child: Text(c.name,
-                    style: TextStyle(fontSize: 15,
-                        fontWeight: isSel ? FontWeight.w700 : FontWeight.w400,
-                        color: kBodyText))),
-                  Text(c.code, style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700,
-                      color: isSel ? kBrand : kSubText)),
+                  Expanded(
+                      child: Text(c.name,
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: isSel
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: kBodyText))),
+                  Text(c.code,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: isSel ? kBrand : kSubText)),
                   if (isSel) ...[
                     const SizedBox(width: 8),
-                    const Icon(LucideIcons.check, size: 16, color: kBrand),
+                    const Icon(LucideIcons.check,
+                        size: 16, color: kBrand),
                   ],
                 ]),
               ),
             );
           }),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+          SizedBox(
+              height: MediaQuery.of(context).padding.bottom + 16),
         ]),
       ),
     );
