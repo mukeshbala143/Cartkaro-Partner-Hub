@@ -110,6 +110,8 @@ class _MedicalRegistrationScreenState
   String _pharmacistCertPath   = '';
   String _gstCertPath          = '';
   String _panDocPath           = '';
+  String _aadhaarDocPath       = '';
+
 
   // ── Step 6 ──
   final _accountHolderCtrl  = TextEditingController();
@@ -1130,6 +1132,15 @@ class _MedicalRegistrationScreenState
             if (value.length != 12) return 'Aadhaar must be 12 digits';
             return null;
           },
+        ),
+        const SizedBox(height: 12),
+        UploadCard(
+          label: 'Aadhaar Card (Front & Back)',
+          required: true,
+          filePath: _aadhaarDocPath,
+          onTap: () =>
+              _pickDocument((path) => setState(() => _aadhaarDocPath = path)),
+          accepts: 'JPG, PNG, PDF',
         ),
         const SizedBox(height: 8),
       ],
