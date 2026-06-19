@@ -37,6 +37,7 @@ dependencies:
   fluttertoast: ^9.1.0
   cached_network_image: ^3.4.1
   lucide_icons: ^0.257.0
+  url_launcher: ^6.2.1
 
   # Routing
   go_router: ^17.3.0
@@ -73,3 +74,5 @@ flutter:
 
   assets:
     - assets/logo.png
+
+ 
