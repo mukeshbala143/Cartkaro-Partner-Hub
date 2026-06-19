@@ -33,6 +33,11 @@ import '../../auth/screens/grocery_registration_screen.dart';
 import '../../auth/screens/restaurant_registration_screen.dart';
 import '../../auth/screens/medical_registration_screen.dart';
 
+import 'help_center_screen.dart';
+import 'chat_support_screen.dart';
+import 'call_support_screen.dart';
+import 'faq_screen.dart';
+import 'report_problem_screen.dart';
 // ════════════════════════════════════════════════════════════════
 // COLOUR HELPERS
 // ════════════════════════════════════════════════════════════════
@@ -2107,7 +2112,7 @@ class _LegalSection extends StatelessWidget {
     late Color fg, bg; late String label;
     switch (status) {
       case 'verified': fg = const Color(0xFF16A34A); bg = const Color(0xFFDCFCE7); label = 'Verified'; break;
-      case 'expired':  fg = const Color(0xFFEF4444); bg = const Color(0xFFFEF2F2); label = 'Expired';  break;
+      case 'rejected':  fg = const Color(0xFFEF4444); bg = const Color(0xFFFEF2F2); label = 'Rejected';  break;
       default:         fg = const Color(0xFFF59E0B); bg = const Color(0xFFFFFBEB); label = 'Pending';
     }
     return Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)), child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: fg)));
@@ -2118,6 +2123,7 @@ class _LegalSection extends StatelessWidget {
 class _NotificationsSection extends StatefulWidget {
   const _NotificationsSection();
   @override State<_NotificationsSection> createState() => _NotificationsSectionState();
+
 }
 class _NotificationsSectionState extends State<_NotificationsSection> {
   bool _sound = true, _updates = true, _payment = true, _msgs = true, _stock = false, _offers = false;
@@ -2167,21 +2173,43 @@ class _SecuritySectionState extends State<_SecuritySection> {
 // ── Help & Support ────────────────────────────────────────────────
 class _HelpSection extends StatelessWidget {
   const _HelpSection();
+
   @override
   Widget build(BuildContext context) => _SectionCard(
-    title: 'Help & Support', icon: LucideIcons.lifeBuoy,
-    child: Column(children: [
-      _Tile(icon: LucideIcons.helpCircle,   title: 'Help Center',      onTap: () => _snack(context, 'Help Center opened')),
-      const _TileDivider(),
-      _Tile(icon: LucideIcons.messageSquare, title: 'Chat Support',    onTap: () => _snack(context, 'Chat support opened')),
-      const _TileDivider(),
-      _Tile(icon: LucideIcons.phone,        title: 'Call Support',     onTap: () => _snack(context, 'Calling support...')),
-      const _TileDivider(),
-      _Tile(icon: LucideIcons.bookOpen,     title: 'FAQs',             onTap: () => _snack(context, 'FAQs opened')),
-      const _TileDivider(),
-      _Tile(icon: LucideIcons.flag,         title: 'Report a Problem', onTap: () => _snack(context, 'Report problem opened')),
-    ]),
-  );
+        title: 'Help & Support',
+        icon: LucideIcons.lifeBuoy,
+        child: Column(children: [
+          _Tile(
+            icon: LucideIcons.helpCircle,
+            title: 'Help Center',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpCenterScreen())),
+          ),
+          const _TileDivider(),
+          _Tile(
+            icon: LucideIcons.messageSquare,
+            title: 'Chat Support',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatSupportScreen())),
+          ),
+          const _TileDivider(),
+          _Tile(
+            icon: LucideIcons.phone,
+            title: 'Call Support',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CallSupportScreen())),
+          ),
+          const _TileDivider(),
+          _Tile(
+            icon: LucideIcons.bookOpen,
+            title: 'FAQs',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FaqScreen())),
+          ),
+          const _TileDivider(),
+          _Tile(
+            icon: LucideIcons.flag,
+            title: 'Report a Problem',
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportProblemScreen())),
+          ),
+        ]),
+      );
 }
 
 // ════════════════════════════════════════════════════════════════
