@@ -25,6 +25,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'document_manage_page.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../models/business_model.dart';
@@ -2063,7 +2064,8 @@ class _PaymentsSection extends StatelessWidget {
 // ── Legal & Verification ─────────────────────────────────────────
 class _LegalSection extends StatelessWidget {
   final BusinessModel business;
-  const _LegalSection({required this.business});
+  final VoidCallback? onDocumentsChanged; // NEW
+  const _LegalSection({required this.business, this.onDocumentsChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -2076,8 +2078,8 @@ class _LegalSection extends StatelessWidget {
             _Tile(
               icon: _docIcon(doc.name), title: doc.name,
               subtitle: '${doc.number}${doc.expiryDate != null ? " · Expires ${doc.expiryDate}" : ""}',
-              trailing: Row(mainAxisSize: MainAxisSize.min, children: [_badge(doc.status), const SizedBox(width: 6), Icon(LucideIcons.chevronRight, size: 14, color: AppColors.kLightText)]),
-              onTap: () => _snack(context, '${doc.name} details opened'),
+              trailing: _badge(doc.status), // chevron hata diya — sirf status badge
+              onTap: null, // individual document tile click nahi karega
             ),
             if (i < business.documents.length - 1) const _TileDivider(),
           ]);
@@ -2086,7 +2088,16 @@ class _LegalSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
           child: GestureDetector(
-            onTap: () => _snack(context, 'Document upload opened'),
+            onTap: () async {
+              final updated = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(builder: (_) => DocumentManagePage(business: business)),
+              );
+              if (updated == true) {
+                onDocumentsChanged?.call();
+                _snack(context, 'Documents updated');
+              }
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(vertical: 11),
               decoration: BoxDecoration(color: context.kPL, borderRadius: BorderRadius.circular(12), border: Border.all(color: context.kPB)),
@@ -2274,6 +2285,11 @@ void _switchBusiness(BusinessModel b) {
         .then((_) => setState(() {}));
   }
 
+void _refreshActiveBusiness() {
+  setState(() {
+    _active = MockData.businesses.firstWhere((b) => b.id == _active.id);
+  });
+}
   @override
   Widget build(BuildContext context) {
     final others = MockData.businesses.where((b) => b.id != _active.id).toList();
@@ -2314,7 +2330,7 @@ void _switchBusiness(BusinessModel b) {
             _BusinessSpecificSection(businessType: _active.businessType),
             const _DeliverySettingsSection(),
             _PaymentsSection(business: _active),
-            _LegalSection(business: _active),
+            _LegalSection(business: _active, onDocumentsChanged: _refreshActiveBusiness),
             const _NotificationsSection(),
             const _SecuritySection(),
             const _HelpSection(),
