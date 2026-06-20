@@ -3,10 +3,12 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/responsive.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
-// Ye 3 files import karna zaroori hai
+// Ye 4 files import karna zaroori hai
 import 'dashboard_screen.dart';
 import 'add_product_screen.dart';
+import '../../earnings/earnings_screen.dart'; // NAYA IMPORT
 import '../../products/screens/products_management_screen.dart';
+import '../../orders/orders_management_screen.dart';
 
 class DashboardLayout extends StatefulWidget {
   final String businessType;
@@ -22,51 +24,62 @@ class DashboardLayout extends StatefulWidget {
 
 class _DashboardLayoutState extends State<DashboardLayout> {
   int _selectedIndex = 0;
-
-  // ── STATE MANAGEMENT (Database for UI) ──
+  
+  late String _currentBusinessType;
   List<Map<String, dynamic>> _itemsList = [];
 
-  // Active items ka live count
   int get activeItemsCount => _itemsList.where((item) => item['isActive'] == true).length;
 
+  @override
+  void initState() {
+    super.initState();
+    _currentBusinessType = widget.businessType;
+  }
+
+  void _changeBusiness(String newType) {
+    setState(() {
+      _currentBusinessType = newType;
+    });
+  }
+
   String get itemName {
-    if (widget.businessType == "restaurant") return "Menu";
-    if (widget.businessType == "medical") return "Medicines";
+    if (_currentBusinessType == "restaurant") return "Menu";
+    if (_currentBusinessType == "medical") return "Medicines";
     return "Products";
   }
 
   String get businessName {
-    if (widget.businessType == "restaurant") return "Restaurant";
-    if (widget.businessType == "medical") return "Medical";
+    if (_currentBusinessType == "restaurant") return "Restaurant";
+    if (_currentBusinessType == "medical") return "Medical";
     return "Store";
   }
 
-  // ── FUNCTIONS ──
-  
-  // Add New Item
   Future<void> _addNewItem() async {
     final newProduct = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddProductScreen(businessType: widget.businessType),
+        builder: (context) => AddProductScreen(
+          businessType: _currentBusinessType,
+          businessName: businessName,
+        ),
       ),
     );
 
     if (newProduct != null) {
       setState(() {
-        _itemsList.insert(0, newProduct); // Naya item sabse upar add hoga
-        _selectedIndex = 1; // Tab 2 pe bhej do
+        _itemsList.insert(0, newProduct); 
+        _selectedIndex = 1; 
       });
     }
   }
 
-  // Edit Item
   Future<void> _editItem(int index, Map<String, dynamic> item) async {
     final updatedProduct = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddProductScreen(
-          businessType: widget.businessType,
+          businessType: _currentBusinessType,
+          businessName: businessName,
           existingProduct: item,
         ),
       ),
@@ -74,24 +87,26 @@ class _DashboardLayoutState extends State<DashboardLayout> {
 
     if (updatedProduct != null) {
       setState(() {
-        _itemsList[index] = updatedProduct; // Data update kar diya
+        _itemsList[index] = updatedProduct;
       });
     }
   }
 
-  // Delete Item
   void _deleteItem(int index) {
     setState(() {
       _itemsList.removeAt(index);
     });
   }
 
-  // Toggle Active/Inactive
   void _toggleItemStatus(int index, bool status) {
     setState(() {
       _itemsList[index]['isActive'] = status;
     });
   }
+
+  // NAYE NAVIGATION FUNCTIONS
+  void _navigateToOrders() => setState(() => _selectedIndex = 2);
+  void _navigateToEarnings() => setState(() => _selectedIndex = 3);
 
   List<_NavItem> get _navItems => [
         const _NavItem(icon: LucideIcons.layoutDashboard, label: 'Home'),
@@ -103,22 +118,31 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   List<Widget> get _pages => [
         // Home Tab
         DashboardScreen(
-          businessType: widget.businessType,
-          activeCount: activeItemsCount, // Live count
-          onAddProductTap: _addNewItem,  // Add button trigger
-          onViewProductsTap: () => setState(() => _selectedIndex = 1), // Box pe click pe tab change
+          businessType: _currentBusinessType,
+          onBusinessChanged: _changeBusiness,
+          activeCount: activeItemsCount,
+          onAddProductTap: _addNewItem,
+          onViewProductsTap: () => setState(() => _selectedIndex = 1), 
+          onOrdersTap: _navigateToOrders, // Callbacks Pass Kiye
+          onRevenueTap: _navigateToEarnings, // Callbacks Pass Kiye
         ),
         // Products Tab
         ProductsManagementScreen(
-          businessType: widget.businessType,
+          businessType: _currentBusinessType,
           items: _itemsList,
           onToggleStatus: _toggleItemStatus,
           onDelete: _deleteItem,
           onEdit: _editItem,
           onAddNew: _addNewItem,
         ),
-        const Center(child: Text("Orders Management")),
-        const Center(child: Text("Earnings")),
+        // Orders Tab
+        OrdersManagementScreen(
+          businessType: _currentBusinessType,
+        ),
+        // Earnings Tab NAYA!
+        EarningsScreen(
+          businessType: _currentBusinessType,
+        ),
       ];
 
   @override

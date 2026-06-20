@@ -92,10 +92,7 @@ class BusinessModel {
   final int activeItemCount;
   final double avgRating;
 
-  final double availableBalance;
-  final double pendingSettlement;
-  final double totalEarnings;
-
+  
   final BankAccount bank;
 
   final List<BusinessDocument> documents;
@@ -122,9 +119,6 @@ class BusinessModel {
     required this.pendingOrders,
     required this.activeItemCount,
     required this.avgRating,
-    required this.availableBalance,
-    required this.pendingSettlement,
-    required this.totalEarnings,
     required this.bank,
     required this.documents,
   });
@@ -191,9 +185,6 @@ class BusinessModel {
       pendingOrders: pendingOrders,
       activeItemCount: activeItemCount,
       avgRating: avgRating,
-      availableBalance: availableBalance,
-      pendingSettlement: pendingSettlement,
-      totalEarnings: totalEarnings,
       bank: bank,
       documents: documents ?? this.documents, // NEW
     );
@@ -232,9 +223,7 @@ class MockData {
       pendingOrders: 5,
       activeItemCount: 120,
       avgRating: 4.8,
-      availableBalance: 12000,
-      pendingSettlement: 3000,
-      totalEarnings: 150000,
+
       bank: const BankAccount(
         bankName: "HDFC Bank",
         accountNumberMasked: "XXXXXX1234",
@@ -275,9 +264,7 @@ class MockData {
       pendingOrders: 5,
       activeItemCount: 60,
       avgRating: 4.7,
-      availableBalance: 8000,
-      pendingSettlement: 1500,
-      totalEarnings: 90000,
+     
       bank: const BankAccount(
         bankName: "HDFC Bank",
         accountNumberMasked: "XXXXXX5678",
@@ -318,9 +305,7 @@ class MockData {
       pendingOrders: 3,
       activeItemCount: 80,
       avgRating: 4.6,
-      availableBalance: 6000,
-      pendingSettlement: 1000,
-      totalEarnings: 75000,
+      
       bank: const BankAccount(
         bankName: "SBI Bank",
         accountNumberMasked: "XXXXXX9999",
