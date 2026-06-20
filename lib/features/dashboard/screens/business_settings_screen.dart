@@ -55,49 +55,119 @@ extension _C on BuildContext {
 class BusinessCategoryData {
   static List<Map<String, String>> getCategories(String businessType) {
     switch (businessType) {
+
+      // 🔴 RESTAURANT
       case 'restaurant':
         return [
-          {'id': 'pure_veg',    'name': 'Pure Veg',       'emoji': '🥗'},
-          {'id': 'non_veg',     'name': 'Non Veg',        'emoji': '🍗'},
-          {'id': 'veg_nonveg',  'name': 'Veg & Non Veg',  'emoji': '🍱'},
-          {'id': 'north_indian','name': 'North Indian',   'emoji': '🍛'},
-          {'id': 'south_indian','name': 'South Indian',   'emoji': '🍚'},
-          {'id': 'pizza',       'name': 'Pizza',          'emoji': '🍕'},
-          {'id': 'fast_food',   'name': 'Fast Food',      'emoji': '🍔'},
-          {'id': 'chinese',     'name': 'Chinese',        'emoji': '🍜'},
-          {'id': 'biryani',     'name': 'Biryani',        'emoji': '🥘'},
-          {'id': 'cafe',        'name': 'Cafe',           'emoji': '☕'},
-          {'id': 'bakery',      'name': 'Bakery',         'emoji': '🎂'},
-          {'id': 'desserts',    'name': 'Desserts',       'emoji': '🍨'},
-          {'id': 'beverages',   'name': 'Beverages',      'emoji': '🥤'},
+          {'id': 'recommended', 'name': 'Recommended', 'emoji': '⭐'},
+          {'id': 'pure_veg', 'name': 'Pure Veg', 'emoji': '🥗'},
+          {'id': 'non_veg', 'name': 'Non Veg', 'emoji': '🍗'},
+          {'id': 'veg_nonveg', 'name': 'Veg & Non Veg', 'emoji': '🍱'},
+
+          {'id': 'north_indian', 'name': 'North Indian', 'emoji': '🍛'},
+          {'id': 'south_indian', 'name': 'South Indian', 'emoji': '🍚'},
+          {'id': 'chinese', 'name': 'Chinese', 'emoji': '🍜'},
+          {'id': 'italian', 'name': 'Italian', 'emoji': '🍝'},
+          {'id': 'continental', 'name': 'Continental', 'emoji': '🍽️'},
+
+          {'id': 'biryani', 'name': 'Biryani', 'emoji': '🥘'},
+          {'id': 'pizza', 'name': 'Pizza', 'emoji': '🍕'},
+          {'id': 'burger', 'name': 'Burger', 'emoji': '🍔'},
+          {'id': 'sandwich', 'name': 'Sandwich', 'emoji': '🥪'},
+          {'id': 'rolls', 'name': 'Rolls & Wraps', 'emoji': '🌯'},
+
+          {'id': 'fast_food', 'name': 'Fast Food', 'emoji': '🍟'},
+          {'id': 'street_food', 'name': 'Street Food', 'emoji': '🥟'},
+          {'id': 'tandoor', 'name': 'Tandoor & Grill', 'emoji': '🍖'},
+
+          {'id': 'breakfast', 'name': 'Breakfast', 'emoji': '🍳'},
+          {'id': 'healthy_food', 'name': 'Healthy Food', 'emoji': '🥬'},
+          {'id': 'seafood', 'name': 'Seafood', 'emoji': '🦐'},
+
+          {'id': 'cafe', 'name': 'Cafe', 'emoji': '☕'},
+          {'id': 'bakery', 'name': 'Bakery', 'emoji': '🎂'},
+          {'id': 'desserts', 'name': 'Desserts', 'emoji': '🍨'},
+          {'id': 'ice_cream', 'name': 'Ice Cream', 'emoji': '🍦'},
+          {'id': 'beverages', 'name': 'Beverages', 'emoji': '🥤'},
         ];
+
+
+      // 🔵 MEDICAL
       case 'medical':
         return [
-          {'id': 'rx_medicines',   'name': 'Prescription Medicines','emoji': '💊'},
-          {'id': 'ayurvedic',      'name': 'Ayurvedic Medicines',   'emoji': '🌿'},
-          {'id': 'personal_care',  'name': 'Personal Care',         'emoji': '🧴'},
-          {'id': 'baby_care',      'name': 'Baby Care',             'emoji': '👶'},
-          {'id': 'health_devices', 'name': 'Healthcare Devices',    'emoji': '🩺'},
-          {'id': 'diabetes',       'name': 'Diabetes Care',         'emoji': '💉'},
-          {'id': 'ortho',          'name': 'Orthopedic Products',   'emoji': '🦴'},
-          {'id': 'supplements',    'name': 'Supplements',           'emoji': '🧪'},
-          {'id': 'hygiene',        'name': 'Hygiene Products',      'emoji': '🧼'},
-          {'id': 'first_aid',      'name': 'First Aid',             'emoji': '🚑'},
-          {'id': 'eye_care',       'name': 'Eye Care',              'emoji': '👁'},
-          {'id': 'dental',         'name': 'Dental Care',           'emoji': '🦷'},
+          {'id': 'rx_medicines', 'name': 'Prescription Medicines', 'emoji': '💊'},
+          {'id': 'otc_medicines', 'name': 'OTC Medicines', 'emoji': '💉'},
+          {'id': 'ayurvedic', 'name': 'Ayurvedic Medicines', 'emoji': '🌿'},
+          {'id': 'homeopathy', 'name': 'Homeopathy', 'emoji': '🍀'},
+
+          {'id': 'health_condition', 'name': 'Health Conditions', 'emoji': '❤️'},
+          {'id': 'diabetes', 'name': 'Diabetes Care', 'emoji': '💉'},
+          {'id': 'heart_care', 'name': 'Heart Care', 'emoji': '❤️'},
+          {'id': 'pain_relief', 'name': 'Pain Relief', 'emoji': '🤕'},
+
+          {'id': 'supplements', 'name': 'Supplements', 'emoji': '🧪'},
+          {'id': 'vitamins', 'name': 'Vitamins', 'emoji': '🍊'},
+          {'id': 'fitness', 'name': 'Fitness Nutrition', 'emoji': '💪'},
+
+          {'id': 'personal_care', 'name': 'Personal Care', 'emoji': '🧴'},
+          {'id': 'skin_care', 'name': 'Skin Care', 'emoji': '✨'},
+          {'id': 'hair_care', 'name': 'Hair Care', 'emoji': '💇'},
+
+          {'id': 'baby_care', 'name': 'Baby Care', 'emoji': '👶'},
+          {'id': 'women_care', 'name': 'Women Care', 'emoji': '🌸'},
+          {'id': 'elder_care', 'name': 'Elder Care', 'emoji': '👴'},
+
+          {'id': 'health_devices', 'name': 'Healthcare Devices', 'emoji': '🩺'},
+          {'id': 'surgical', 'name': 'Surgical Items', 'emoji': '🏥'},
+          {'id': 'ortho', 'name': 'Orthopedic Products', 'emoji': '🦴'},
+
+          {'id': 'hygiene', 'name': 'Hygiene Products', 'emoji': '🧼'},
+          {'id': 'first_aid', 'name': 'First Aid', 'emoji': '🚑'},
+          {'id': 'eye_care', 'name': 'Eye Care', 'emoji': '👁'},
+          {'id': 'dental', 'name': 'Dental Care', 'emoji': '🦷'},
+          {'id': 'sexual_wellness', 'name': 'Sexual Wellness', 'emoji': '🛡️'},
+          {'id': 'covid', 'name': 'Covid Essentials', 'emoji': '😷'},
         ];
-      default: // grocery
+
+
+      // 🟢 GROCERY
+      default:
         return [
-          {'id': 'fruits_veg',    'name': 'Fruits & Vegetables', 'emoji': '🥦'},
-          {'id': 'dairy',         'name': 'Dairy Products',      'emoji': '🥛'},
-          {'id': 'rice_grains',   'name': 'Rice & Grains',       'emoji': '🌾'},
-          {'id': 'snacks',        'name': 'Snacks',              'emoji': '🍿'},
-          {'id': 'beverages',     'name': 'Beverages',           'emoji': '🥤'},
-          {'id': 'household',     'name': 'Household Items',     'emoji': '🏠'},
-          {'id': 'personal_care', 'name': 'Personal Care',       'emoji': '🧴'},
-          {'id': 'baby_care',     'name': 'Baby Care',           'emoji': '🍼'},
-          {'id': 'frozen',        'name': 'Frozen Food',         'emoji': '❄️'},
-          {'id': 'meat',          'name': 'Meat Products',       'emoji': '🥩'},
+          {'id': 'fruits_veg', 'name': 'Fruits & Vegetables', 'emoji': '🥦'},
+          {'id': 'dairy', 'name': 'Dairy Products', 'emoji': '🥛'},
+          {'id': 'bakery', 'name': 'Bakery', 'emoji': '🍞'},
+          {'id': 'eggs', 'name': 'Eggs', 'emoji': '🥚'},
+
+          {'id': 'rice_grains', 'name': 'Rice & Grains', 'emoji': '🌾'},
+          {'id': 'dal_pulses', 'name': 'Dal & Pulses', 'emoji': '🫘'},
+          {'id': 'atta_flour', 'name': 'Atta & Flour', 'emoji': '🌾'},
+
+          {'id': 'oil_ghee', 'name': 'Oil & Ghee', 'emoji': '🛢️'},
+          {'id': 'masala', 'name': 'Masala & Spices', 'emoji': '🌶️'},
+
+          {'id': 'breakfast', 'name': 'Breakfast Food', 'emoji': '🥣'},
+          {'id': 'instant_food', 'name': 'Instant Food', 'emoji': '🍜'},
+          {'id': 'frozen', 'name': 'Frozen Food', 'emoji': '❄️'},
+
+          {'id': 'snacks', 'name': 'Snacks', 'emoji': '🍿'},
+          {'id': 'sweets', 'name': 'Sweets & Chocolates', 'emoji': '🍫'},
+          {'id': 'dry_fruits', 'name': 'Dry Fruits', 'emoji': '🥜'},
+
+          {'id': 'beverages', 'name': 'Beverages', 'emoji': '🥤'},
+
+          {'id': 'meat', 'name': 'Meat Products', 'emoji': '🥩'},
+          {'id': 'seafood', 'name': 'Seafood', 'emoji': '🐟'},
+
+          {'id': 'household', 'name': 'Household Items', 'emoji': '🏠'},
+          {'id': 'cleaning', 'name': 'Cleaning Supplies', 'emoji': '🧹'},
+
+          {'id': 'personal_care', 'name': 'Personal Care', 'emoji': '🧴'},
+          {'id': 'baby_care', 'name': 'Baby Care', 'emoji': '🍼'},
+          {'id': 'pet_care', 'name': 'Pet Care', 'emoji': '🐶'},
+
+          {'id': 'home_kitchen', 'name': 'Home & Kitchen', 'emoji': '🍳'},
+          {'id': 'stationery', 'name': 'Stationery', 'emoji': '✏️'},
+          {'id': 'pooja', 'name': 'Pooja Needs', 'emoji': '🪔'},
         ];
     }
   }
@@ -1968,7 +2038,7 @@ class _DeliverySettingsSectionState extends State<_DeliverySettingsSection> {
   }
 }
 
-// ── Payments & Earnings ──────────────────────────────────────────
+// ── Your Account  ──────────────────────────────────────────
 class _PaymentsSection extends StatelessWidget {
   final BusinessModel business;
   const _PaymentsSection({required this.business});
@@ -1977,36 +2047,9 @@ class _PaymentsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SectionCard(
-      title: 'Payments & Earnings', icon: LucideIcons.wallet,
+      title: 'Your Account', icon: LucideIcons.wallet,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: context.kP, borderRadius: BorderRadius.circular(16)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Available Balance', style: TextStyle(fontSize: 11.5, color: Colors.white.withOpacity(0.75))),
-              const SizedBox(height: 4),
-              Text(_fmt(business.availableBalance), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.8)),
-              const SizedBox(height: 12),
-              Divider(color: Colors.white.withOpacity(0.2), height: 1),
-              const SizedBox(height: 12),
-              Row(children: [
-                _wStat('Pending', _fmt(business.pendingSettlement)),
-                Container(width: 1, height: 28, color: Colors.white.withOpacity(0.2)),
-                _wStat('Total Earned', _fmt(business.totalEarnings)),
-              ]),
-            ]),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Row(children: [
-          Expanded(child: _wBtn(context, LucideIcons.arrowDownToLine, 'Withdraw', true, () => _snack(context, 'Withdrawal initiated'))),
-          const SizedBox(width: 10),
-          Expanded(child: _wBtn(context, LucideIcons.history, 'Transactions', false, () => _snack(context, 'Opening transactions...'))),
-        ])),
-        const SizedBox(height: 8),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: _wBtn(context, LucideIcons.calendarRange, 'Settlement History', false, () => _snack(context, 'Opening settlement history...'), fullWidth: true)),
+             
         const _SectionLabel('BANK ACCOUNT'),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
