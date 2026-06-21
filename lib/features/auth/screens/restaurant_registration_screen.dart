@@ -15,6 +15,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../dashboard/screens/dashboard_layout.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─────────────────────────────────────────
 // THEME CONSTANTS (Green removed, unified Blue theme)
@@ -122,7 +123,6 @@ class _RestaurantRegistrationScreenState
 
   // ── Step 7 ──
   String _deliveryOption          = 'cartkaro';
-  String _deliveryRadius          = '5 KM';
   final _preparationTimeCtrl      = TextEditingController();
   final _costForTwoCtrl           = TextEditingController();
   final _packagingChargeCtrl      = TextEditingController();
@@ -312,6 +312,18 @@ class _RestaurantRegistrationScreenState
 
     return;
   }
+
+  if (_currentStep == 1 && _restaurantPhotos.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        "Please upload at least one restaurant photo",
+      ),
+      backgroundColor: kErrorColor,
+    ),
+  );
+  return;
+}
 
     if (_currentStep == 7 && !_agreementAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -807,20 +819,38 @@ class _RestaurantRegistrationScreenState
   // ─────────────────────────────────────────
   Widget _buildStep3() {
     const categories = [
-      ('🥗', 'Pure Veg'),
-      ('🍗', 'Non Veg'),
-      ('🍱', 'Veg & Non Veg'),
-      ('🍛', 'North Indian'),
-      ('🍚', 'South Indian'),
-      ('🍕', 'Pizza'),
-      ('🍔', 'Fast Food'),
-      ('🍜', 'Chinese'),
-      ('🥘', 'Biryani'),
-      ('☕', 'Cafe'),
-      ('🎂', 'Bakery'),
-      ('🍨', 'Desserts'),
-      ('🥤', 'Beverages'),
-    ];
+  ('⭐', 'Recommended'),
+
+  ('🥗', 'Pure Veg'),
+  ('🍗', 'Non Veg'),
+  ('🍱', 'Veg & Non Veg'),
+
+  ('🍛', 'North Indian'),
+  ('🍚', 'South Indian'),
+  ('🍜', 'Chinese'),
+  ('🍝', 'Italian'),
+  ('🍽️', 'Continental'),
+
+  ('🥘', 'Biryani'),
+  ('🍕', 'Pizza'),
+  ('🍔', 'Burger'),
+  ('🥪', 'Sandwich'),
+  ('🌯', 'Rolls & Wraps'),
+
+  ('🍟', 'Fast Food'),
+  ('🥟', 'Street Food'),
+  ('🍖', 'Tandoor & Grill'),
+
+  ('🍳', 'Breakfast'),
+  ('🥬', 'Healthy Food'),
+  ('🦐', 'Seafood'),
+
+  ('☕', 'Cafe'),
+  ('🎂', 'Bakery'),
+  ('🍨', 'Desserts'),
+  ('🍦', 'Ice Cream'),
+  ('🥤', 'Beverages'),
+];
 
     return _StepWrapper(
       stepKey: _formKeys[2],
@@ -1235,7 +1265,6 @@ class _RestaurantRegistrationScreenState
   // STEP 7 — Food Delivery Setup
   // ─────────────────────────────────────────
   Widget _buildStep7() {
-    const radii = ['1 KM', '3 KM', '5 KM', '10 KM'];
 
     return _StepWrapper(
       stepKey: _formKeys[6],
@@ -1254,54 +1283,8 @@ class _RestaurantRegistrationScreenState
           badge: 'Recommended',
         ),
         const SizedBox(height: 12),
-        SelectionCard(
-          icon: Icons.person_pin_circle_outlined,
-          title: 'Self Delivery',
-          subtitle:
-              'You manage your own delivery team and vehicles for all orders.',
-          selected: _deliveryOption == 'self',
-          onTap: () => setState(() => _deliveryOption = 'self'),
-        ),
-        const SizedBox(height: 24),
-        _SectionLabel(label: 'Delivery Radius'),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: radii.map((r) {
-            final sel = _deliveryRadius == r;
-            return GestureDetector(
-              onTap: () => setState(() => _deliveryRadius = r),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 22, vertical: 12),
-                decoration: BoxDecoration(
-                  color: sel ? kNavyBlue : kWhite,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: sel ? kNavyBlue : kBorderColor,
-                    width: sel ? 1.5 : 1,
-                  ),
-                  boxShadow: sel
-                      ? [
-                          BoxShadow(
-                              color: kNavyBlue.withOpacity(0.15),
-                              blurRadius: 8)
-                        ]
-                      : [],
-                ),
-                child: Text(
-                  r,
-                  style: TextStyle(
-                    color: sel ? kWhite : kTextPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+        
+        
         const SizedBox(height: 24),
         _SectionLabel(label: 'Restaurant Settings'),
         CustomTextField(
@@ -1723,17 +1706,34 @@ class _RestaurantSuccessScreenState extends State<_RestaurantSuccessScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'Need help? Contact Partner Support',
-              style: TextStyle(
+          TextButton.icon(
+              onPressed: () async {
+                final Uri callUri = Uri(
+                  scheme: 'tel',
+                  path: '+919876543210',
+                );
+
+                if (await canLaunchUrl(callUri)) {
+                  await launchUrl(callUri);
+                }
+              },
+
+              icon: const Icon(
+                Icons.call,
                 color: kNavyBlueLight,
-                fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
+                size: 18,
+              ),
+
+              label: const Text(
+                'Need help? Contact Partner Support\n+91 98765 43210',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: kNavyBlueLight,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 24),
         ],
       ),

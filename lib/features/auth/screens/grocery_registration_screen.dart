@@ -15,6 +15,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import '../../dashboard/screens/dashboard_layout.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─────────────────────────────────────────
 // THEME CONSTANTS (Green removed, unified Blue theme)
@@ -120,7 +121,6 @@ class _GroceryRegistrationScreenState
 
   // ── Step 7 ──
   String _deliveryOption     = 'cartkaro';
-  String _deliveryRadius     = '5 KM';
   final _minOrderCtrl        = TextEditingController();
   final _estDeliveryCtrl     = TextEditingController();
 
@@ -319,6 +319,18 @@ class _GroceryRegistrationScreenState
 
     return;
   }
+
+  if (_currentStep == 1 && _storePhotos.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        "Please upload at least one store photo",
+      ),
+      backgroundColor: kErrorColor,
+    ),
+  );
+  return;
+}
 
     if (_currentStep == 7 && !_agreementAccepted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -820,17 +832,42 @@ class _GroceryRegistrationScreenState
   // ─────────────────────────────────────────
   Widget _buildStep3() {
     const categories = [
-      ('🥦', 'Fruits & Vegetables'),
-      ('🥛', 'Dairy Products'),
-      ('🌾', 'Rice & Grains'),
-      ('🍿', 'Snacks'),
-      ('🥤', 'Beverages'),
-      ('🏠', 'Household Items'),
-      ('🧴', 'Personal Care'),
-      ('🍼', 'Baby Care'),
-      ('❄️', 'Frozen Food'),
-      ('🥩', 'Meat Products'),
-    ];
+  ('🥦', 'Fruits & Vegetables'),
+  ('🥛', 'Dairy Products'),
+  ('🍞', 'Bakery'),
+  ('🥚', 'Eggs'),
+
+  ('🌾', 'Rice & Grains'),
+  ('🫘', 'Dal & Pulses'),
+  ('🌾', 'Atta & Flour'),
+
+  ('🛢️', 'Oil & Ghee'),
+  ('🌶️', 'Masala & Spices'),
+
+  ('🥣', 'Breakfast Food'),
+  ('🍜', 'Instant Food'),
+  ('❄️', 'Frozen Food'),
+
+  ('🍿', 'Snacks'),
+  ('🍫', 'Sweets & Chocolates'),
+  ('🥜', 'Dry Fruits'),
+
+  ('🥤', 'Beverages'),
+
+  ('🥩', 'Meat Products'),
+  ('🐟', 'Seafood'),
+
+  ('🏠', 'Household Items'),
+  ('🧹', 'Cleaning Supplies'),
+
+  ('🧴', 'Personal Care'),
+  ('🍼', 'Baby Care'),
+  ('🐶', 'Pet Care'),
+
+  ('🍳', 'Home & Kitchen'),
+  ('✏️', 'Stationery'),
+  ('🪔', 'Pooja Needs'),
+];
 
     return _StepWrapper(
       stepKey: _formKeys[2],
@@ -1240,7 +1277,6 @@ class _GroceryRegistrationScreenState
   // STEP 7 — Delivery Settings
   // ─────────────────────────────────────────
   Widget _buildStep7() {
-    const radii = ['1 KM', '3 KM', '5 KM', '10 KM'];
 
     return _StepWrapper(
       stepKey: _formKeys[6],
@@ -1259,54 +1295,7 @@ class _GroceryRegistrationScreenState
           badge: 'Recommended',
         ),
         const SizedBox(height: 12),
-        SelectionCard(
-          icon: Icons.person_pin_circle_outlined,
-          title: 'Self Delivery',
-          subtitle:
-              'You manage your own delivery team and vehicles for all orders.',
-          selected: _deliveryOption == 'self',
-          onTap: () => setState(() => _deliveryOption = 'self'),
-        ),
-        const SizedBox(height: 24),
-        _SectionLabel(label: 'Delivery Radius'),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: radii.map((r) {
-            final sel = _deliveryRadius == r;
-            return GestureDetector(
-              onTap: () => setState(() => _deliveryRadius = r),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 22, vertical: 12),
-                decoration: BoxDecoration(
-                  color: sel ? kNavyBlue : kWhite,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: sel ? kNavyBlue : kBorderColor,
-                    width: sel ? 1.5 : 1,
-                  ),
-                  boxShadow: sel
-                      ? [
-                          BoxShadow(
-                              color: kNavyBlue.withOpacity(0.15),
-                              blurRadius: 8)
-                        ]
-                      : [],
-                ),
-                child: Text(
-                  r,
-                  style: TextStyle(
-                    color: sel ? kWhite : kTextPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+                
         const SizedBox(height: 24),
         _SectionLabel(label: 'Order Settings'),
         CustomTextField(
@@ -1747,17 +1736,34 @@ class _SuccessScreenState extends State<_SuccessScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'Need help? Contact Partner Support',
-              style: TextStyle(
+          TextButton.icon(
+              onPressed: () async {
+                final Uri callUri = Uri(
+                  scheme: 'tel',
+                  path: '+919876543210',
+                );
+
+                if (await canLaunchUrl(callUri)) {
+                  await launchUrl(callUri);
+                }
+              },
+
+              icon: const Icon(
+                Icons.call,
                 color: kNavyBlueLight,
-                fontWeight: FontWeight.w600,
-                decoration: TextDecoration.underline,
+                size: 18,
+              ),
+
+              label: const Text(
+                'Need help? Contact Partner Support\n+91 98765 43210',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: kNavyBlueLight,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 24),
         ],
       ),
