@@ -284,7 +284,61 @@ class _RestaurantRegistrationScreenState
       setState(() => onPathUpdated(result.files.single.path!));
     }
   }
+ 
+  Future<void> _showImagePickerOptions(
+  ValueChanged<String> onPathUpdated,
+) async {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(20),
+      ),
+    ),
+    builder: (_) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
 
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt_outlined,
+              ),
+              title: const Text("Take Photo"),
+              onTap: () {
+                Navigator.pop(context);
+
+                _pickImage(
+                  ImageSource.camera,
+                  onPathUpdated,
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+              ),
+              title: const Text(
+                "Choose From Gallery",
+              ),
+              onTap: () {
+                Navigator.pop(context);
+
+                _pickImage(
+                  ImageSource.gallery,
+                  onPathUpdated,
+                );
+              },
+            ),
+
+          ],
+        ),
+      );
+    },
+  );
+}
   // ─────────────────────────────────────────
   // NAVIGATION — WidgetsBinding se jumpToPage call karo
   // ─────────────────────────────────────────
@@ -296,6 +350,20 @@ class _RestaurantRegistrationScreenState
     if (!isTestingMode && form != null && !form.validate()) {
       return;
     }
+
+  // Step 1 Profile Photo Mandatory
+if (_currentStep == 0 && _profilePhotoPath.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        "Please upload your profile photo",
+      ),
+      backgroundColor: kErrorColor,
+    ),
+  );
+
+  return;
+}
 
       // Step 2 GPS Location Mandatory
   if (_currentStep == 1 &&
@@ -742,12 +810,16 @@ class _RestaurantRegistrationScreenState
               ImageSource.gallery, (path) => _restaurantBannerPath = path),
         ),
         const SizedBox(height: 16),
-        _SectionLabel(label: 'Restaurant Photos (Camera)'),
+        _SectionLabel(label: 'Restaurant Photos '),
         _MultiPhotoUpload(
           photos: _restaurantPhotos,
-          onAdd: () => _pickImage(ImageSource.camera, (path) {
-            setState(() => _restaurantPhotos.add(path));
-          }),
+          onAdd: () => _showImagePickerOptions(
+          (path) {
+            setState(() {
+              _restaurantPhotos.add(path);
+            });
+          },
+        ),
           onRemove: (i) => setState(() => _restaurantPhotos.removeAt(i)),
         ),
         const SizedBox(height: 20),

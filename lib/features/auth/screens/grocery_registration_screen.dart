@@ -292,6 +292,60 @@ class _GroceryRegistrationScreenState
     }
   }
 
+  Future<void> _showImagePickerOptions(
+  ValueChanged<String> onPathUpdated,
+) async {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(20),
+      ),
+    ),
+    builder: (_) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt_outlined,
+              ),
+              title: const Text("Take Photo"),
+              onTap: () {
+                Navigator.pop(context);
+
+                _pickImage(
+                  ImageSource.camera,
+                  onPathUpdated,
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+              ),
+              title: const Text(
+                "Choose From Gallery",
+              ),
+              onTap: () {
+                Navigator.pop(context);
+
+                _pickImage(
+                  ImageSource.gallery,
+                  onPathUpdated,
+                );
+              },
+            ),
+
+          ],
+        ),
+      );
+    },
+  );
+}
   // ─────────────────────────────────────────
   // FIX 1: NAVIGATION — WidgetsBinding se jumpToPage call karo
   // ─────────────────────────────────────────
@@ -304,6 +358,20 @@ class _GroceryRegistrationScreenState
       return;
     }
 
+  // Step 1 Profile Photo Mandatory
+if (_currentStep == 0 && _profilePhotoPath.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        "Please upload your profile photo",
+      ),
+      backgroundColor: kErrorColor,
+    ),
+  );
+
+  return;
+}
+  
       // Step 2 GPS Location Mandatory
   if (_currentStep == 1 &&
       (_latCtrl.text.isEmpty || _lngCtrl.text.isEmpty)) {
@@ -755,12 +823,16 @@ class _GroceryRegistrationScreenState
               ImageSource.gallery, (path) => _storeBannerPath = path),
         ),
         const SizedBox(height: 16),
-        _SectionLabel(label: 'Store Photos (Camera)'),
+        _SectionLabel(label: 'Store Photos'),
         _MultiPhotoUpload(
           photos: _storePhotos,
-          onAdd: () => _pickImage(ImageSource.camera, (path) {
-            setState(() => _storePhotos.add(path));
-          }),
+          onAdd: () => _showImagePickerOptions(
+          (path) {
+            setState(() {
+              _storePhotos.add(path);
+            });
+          },
+        ),
           onRemove: (i) => setState(() => _storePhotos.removeAt(i)),
         ),
         const SizedBox(height: 20),

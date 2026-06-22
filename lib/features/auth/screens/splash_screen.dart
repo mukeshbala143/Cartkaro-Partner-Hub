@@ -28,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     // Jab backend lagega tab check karenge ki user logged in hai ya nahi
     Future.delayed(const Duration(seconds: 3), () {
        //if (mounted) context.go('/pin-login');
-       if (mounted) context.go('/login'); // Abhi ke liye seedha login page pe bhej rahe hain 
+      if (mounted) context.go('/login'); // Abhi ke liye seedha login page pe bhej rahe hain 
     });
   }
 
