@@ -26,6 +26,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'document_manage_page.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../models/business_model.dart';
@@ -33,6 +34,8 @@ import '../../../models/business_model.dart';
 import '../../auth/screens/grocery_registration_screen.dart';
 import '../../auth/screens/restaurant_registration_screen.dart';
 import '../../auth/screens/medical_registration_screen.dart';
+import '../../auth/screens/pin_login_screen.dart';
+import '../../auth/screens/login_screen.dart';
 
 import 'help_center_screen.dart';
 import 'chat_support_screen.dart';
@@ -476,10 +479,20 @@ class BusinessTypeScreen extends StatelessWidget {
 
 // ════════════════════════════════════════════════════════════════
 // UPDATE IMAGES SHEET (camera + gallery + live preview)
+// Banner • Logo • Profile Photo — sab two-way state se sync
 // ════════════════════════════════════════════════════════════════
 
 class _UpdateImagesSheet extends StatefulWidget {
-  const _UpdateImagesSheet();
+  final File? initialBanner;
+  final File? initialLogo;
+  final File? initialProfilePhoto;
+  final void Function(File? banner, File? logo, File? profilePhoto) onSaved;
+  const _UpdateImagesSheet({
+    this.initialBanner,
+    this.initialLogo,
+    this.initialProfilePhoto,
+    required this.onSaved,
+  });
   @override
   State<_UpdateImagesSheet> createState() => _UpdateImagesSheetState();
 }
@@ -487,9 +500,19 @@ class _UpdateImagesSheet extends StatefulWidget {
 class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
   File? _banner;
   File? _logo;
+  File? _profilePhoto;
   final _picker = ImagePicker();
 
-  Future<void> _pick(bool isBanner) async {
+  @override
+  void initState() {
+    super.initState();
+    _banner = widget.initialBanner;
+    _logo = widget.initialLogo;
+    _profilePhoto = widget.initialProfilePhoto;
+  }
+
+  Future<void> _pick(String type) async {
+    final String label = type == 'banner' ? 'Banner Photo' : (type == 'logo' ? 'Logo' : 'Profile Photo');
     await showModalBottomSheet(
       context: context, backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
@@ -498,11 +521,11 @@ class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppColors.kBorder, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 16),
-          Text(isBanner ? 'Update Banner Photo' : 'Update Logo', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kDarkText)),
+          Text('Update $label', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.kDarkText)),
           const SizedBox(height: 16),
-          _pickOption(ctx, LucideIcons.camera, 'Take Photo',             () => _fromSource(ImageSource.camera,  isBanner, ctx)),
+          _pickOption(ctx, LucideIcons.camera, 'Take Photo',          () => _fromSource(ImageSource.camera,  type, ctx)),
           const SizedBox(height: 10),
-          _pickOption(ctx, LucideIcons.image,  'Choose from Gallery',    () => _fromSource(ImageSource.gallery, isBanner, ctx)),
+          _pickOption(ctx, LucideIcons.image,  'Choose from Gallery', () => _fromSource(ImageSource.gallery, type, ctx)),
           const SizedBox(height: 16),
         ]),
       ),
@@ -526,11 +549,21 @@ class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
     );
   }
 
-  Future<void> _fromSource(ImageSource source, bool isBanner, BuildContext sheetCtx) async {
+  Future<void> _fromSource(ImageSource source, String type, BuildContext sheetCtx) async {
     Navigator.pop(sheetCtx);
     try {
       final XFile? picked = await _picker.pickImage(source: source, imageQuality: 85, maxWidth: 1200);
-      if (picked != null) setState(() => isBanner ? _banner = File(picked.path) : _logo = File(picked.path));
+      if (picked != null) {
+        setState(() {
+          if (type == 'banner') {
+            _banner = File(picked.path);
+          } else if (type == 'logo') {
+            _logo = File(picked.path);
+          } else {
+            _profilePhoto = File(picked.path);
+          }
+        });
+      }
     } catch (e) {
       _snack(context, 'Could not pick image: $e');
     }
@@ -540,6 +573,7 @@ class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
   Widget build(BuildContext context) {
     return _SheetScaffold(
       title: 'Update Images',
+      scrollable: true,
       child: Column(children: [
         const SizedBox(height: 14),
         Padding(
@@ -547,7 +581,7 @@ class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
           child: Column(children: [
             // Banner
             GestureDetector(
-              onTap: () => _pick(true),
+              onTap: () => _pick('banner'),
               child: Container(
                 height: 120, width: double.infinity,
                 decoration: BoxDecoration(color: AppColors.kBackground, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.kBorder)),
@@ -568,7 +602,7 @@ class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
             const SizedBox(height: 12),
             // Logo
             GestureDetector(
-              onTap: () => _pick(false),
+              onTap: () => _pick('logo'),
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(color: AppColors.kBackground, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.kBorder)),
@@ -585,9 +619,33 @@ class _UpdateImagesSheetState extends State<_UpdateImagesSheet> {
                 ]),
               ),
             ),
+            const SizedBox(height: 12),
+            // Profile Photo
+            GestureDetector(
+              onTap: () => _pick('profile'),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: AppColors.kBackground, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.kBorder)),
+                child: Row(children: [
+                  Container(width: 60, height: 60, decoration: BoxDecoration(shape: BoxShape.circle, color: context.kPL), clipBehavior: Clip.antiAlias,
+                    child: _profilePhoto != null ? Image.file(_profilePhoto!, fit: BoxFit.cover) : Icon(LucideIcons.user, color: context.kP, size: 24)),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Profile Photo', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.kDarkText)),
+                    const SizedBox(height: 2),
+                    Text('Owner display picture', style: TextStyle(fontSize: 11.5, color: AppColors.kLightText)),
+                  ])),
+                  Icon(LucideIcons.upload, size: 16, color: context.kP),
+                ]),
+              ),
+            ),
           ]),
         ),
-        _PrimaryBtn(label: 'Upload Images', onTap: () { Navigator.pop(context); _snack(context, 'Images uploaded successfully'); }),
+        _PrimaryBtn(label: 'Upload Images', onTap: () {
+          widget.onSaved(_banner, _logo, _profilePhoto);
+          Navigator.pop(context);
+          _snack(context, 'Images uploaded successfully');
+        }),
       ]),
     );
   }
@@ -1617,16 +1675,27 @@ class _DeliveryRadiusSheetState extends State<_DeliveryRadiusSheet> {
 // ════════════════════════════════════════════════════════════════
 
 // ── Business Profile ─────────────────────────────────────────────
-class _BusinessProfileSection extends StatelessWidget {
+class _BusinessProfileSection extends StatefulWidget {
   final BusinessModel business;
   const _BusinessProfileSection({required this.business});
+  @override
+  State<_BusinessProfileSection> createState() => _BusinessProfileSectionState();
+}
+
+class _BusinessProfileSectionState extends State<_BusinessProfileSection> {
+  File? _banner;
+  File? _logo;
+  File? _profilePhoto;
 
   @override
   Widget build(BuildContext context) {
+    final business = widget.business;
     return _SectionCard(
       title: 'Business Profile', icon: LucideIcons.store,
       child: Column(children: [
-        _buildBannerLogo(context),
+        _buildBannerLogo(context, business),
+        _profilePhotoRow(context),
+        const _TileDivider(),
         _info(LucideIcons.user,   'Owner Name',    business.ownerName),
         const _TileDivider(),
         _info(LucideIcons.phone,  'Mobile Number', business.mobileNumber),
@@ -1640,7 +1709,19 @@ class _BusinessProfileSection extends StatelessWidget {
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: Row(children: [
           Expanded(child: _btn(context, LucideIcons.pencil, 'Edit Profile', true, () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => _EditProfileSheet(business: business)))),
           const SizedBox(width: 10),
-          Expanded(child: _btn(context, LucideIcons.image, 'Update Images', false, () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => const _UpdateImagesSheet()))),
+          Expanded(child: _btn(context, LucideIcons.image, 'Update Images', false, () => showModalBottomSheet(
+            context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+            builder: (_) => _UpdateImagesSheet(
+              initialBanner: _banner,
+              initialLogo: _logo,
+              initialProfilePhoto: _profilePhoto,
+              onSaved: (banner, logo, profilePhoto) => setState(() {
+                _banner = banner;
+                _logo = logo;
+                _profilePhoto = profilePhoto;
+              }),
+            ),
+          ))),
         ])),
         const SizedBox(height: 8),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 14), child: _btn(context, LucideIcons.navigation, 'Update Address', false, () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => _UpdateAddressSheet(business: business)), fullWidth: true)),
@@ -1650,13 +1731,48 @@ class _BusinessProfileSection extends StatelessWidget {
     );
   }
 
-  Widget _buildBannerLogo(BuildContext context) => Padding(
+  Widget _profilePhotoRow(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Container(
+        width: 46, height: 46,
+        decoration: BoxDecoration(shape: BoxShape.circle, color: context.kPL, border: Border.all(color: AppColors.kWhite, width: 2)),
+        clipBehavior: Clip.antiAlias,
+        child: _profilePhoto != null
+            ? Image.file(_profilePhoto!, fit: BoxFit.cover)
+            : Icon(LucideIcons.user, color: context.kP, size: 20),
+      ),
+      const SizedBox(width: 12),
+      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Profile Photo', style: TextStyle(fontSize: 11, color: AppColors.kLightText, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 2),
+        Text(_profilePhoto != null ? 'Photo added' : 'Not set', style: const TextStyle(fontSize: 13, color: AppColors.kDarkText, fontWeight: FontWeight.w600, height: 1.3)),
+      ])),
+    ]),
+  );
+
+  // Banner aur Logo — ab actual uploaded image dikhega, placeholder nahi
+  Widget _buildBannerLogo(BuildContext context, BusinessModel business) => Padding(
     padding: const EdgeInsets.fromLTRB(14, 10, 14, 8),
     child: Column(children: [
-      Container(height: 100, width: double.infinity, decoration: BoxDecoration(color: context.kPL, borderRadius: BorderRadius.circular(14)), child: Center(child: Icon(LucideIcons.imagePlus, size: 28, color: context.kP.withOpacity(0.4)))),
+      Container(
+        height: 100, width: double.infinity,
+        decoration: BoxDecoration(color: context.kPL, borderRadius: BorderRadius.circular(14)),
+        clipBehavior: Clip.antiAlias,
+        child: _banner != null
+            ? Image.file(_banner!, fit: BoxFit.cover)
+            : Center(child: Icon(LucideIcons.imagePlus, size: 28, color: context.kP.withOpacity(0.4))),
+      ),
       const SizedBox(height: 12),
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(width: 52, height: 52, decoration: BoxDecoration(color: context.kPL, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.kWhite, width: 2)), child: Icon(LucideIcons.store, color: context.kP, size: 21)),
+        Container(
+          width: 52, height: 52,
+          decoration: BoxDecoration(color: context.kPL, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.kWhite, width: 2)),
+          clipBehavior: Clip.antiAlias,
+          child: _logo != null
+              ? Image.file(_logo!, fit: BoxFit.cover)
+              : Icon(LucideIcons.store, color: context.kP, size: 21),
+        ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(business.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.kDarkText, letterSpacing: -0.3)),
@@ -2207,19 +2323,103 @@ class _SecuritySection extends StatefulWidget {
 }
 class _SecuritySectionState extends State<_SecuritySection> {
   bool _fp = false;
+
+  // ════════════════════════════════════════════════════════════════
+  // LOGOUT — confirm karega, fir PIN login route par navigate karega
+  // ════════════════════════════════════════════════════════════════
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Logout?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.kDarkText)),
+        content: const Text('Are you sure you want to logout from this device?', style: TextStyle(fontSize: 13.5, color: AppColors.kLightText, height: 1.4)),
+        actionsPadding: const EdgeInsets.fromLTRB(8, 0, 16, 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: AppColors.kLightText, fontWeight: FontWeight.w700)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // dialog band karo
+              _performLogout();
+            },
+            child: const Text('Logout', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performLogout() {
+    // TODO: yahan apna session/token clear karne wala logic daalo (SharedPreferences, etc.)
+    // ⚠️ Apna actual PIN-login route path yaha confirm karke daalo
+    context.go('/pin-login');
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // DELETE ACCOUNT — confirm karega, fir Login route par navigate karega
+  // ════════════════════════════════════════════════════════════════
+  void _confirmDeleteAccount() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete Account?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFFEF4444))),
+        content: const Text(
+          'This action is permanent and cannot be undone. All your business data, orders, and account information will be permanently deleted.\n\nAre you sure you want to continue?',
+          style: TextStyle(fontSize: 13.5, color: AppColors.kLightText, height: 1.4),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(8, 0, 16, 12),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: AppColors.kLightText, fontWeight: FontWeight.w700)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx); // dialog band karo
+              _performDeleteAccount();
+            },
+            child: const Text('Delete Forever', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _performDeleteAccount() {
+    // TODO: yahan backend API call karo account delete karne ke liye
+    // ⚠️ Apna actual Login screen ka route path yaha confirm karke daalo
+    context.go('/login');
+  }
+
   @override
   Widget build(BuildContext context) => _SectionCard(
     title: 'Security', icon: LucideIcons.shield,
     child: Column(children: [
-      _Tile(icon: LucideIcons.keyRound,        title: 'Change Login PIN',     subtitle: 'Update your 4-digit PIN',       onTap: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => const _ChangePinSheet())),
+      _Tile(
+        icon: LucideIcons.keyRound,
+        title: 'Change Login PIN',
+        subtitle: 'Update your 4-digit PIN',
+        onTap: () => showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => const _ChangePinSheet()),
+      ),
       const _TileDivider(),
-      _SwitchTile(icon: LucideIcons.fingerprint, title: 'Fingerprint Login',  subtitle: 'Use biometrics to sign in',     value: _fp, onChanged: (v) => setState(() => _fp = v)),
+      _Tile(
+        icon: LucideIcons.logOut,
+        title: 'Logout',
+        subtitle: 'Sign out of this device',
+        onTap: _confirmLogout,
+      ),
       const _TileDivider(),
-      _Tile(icon: LucideIcons.monitorSmartphone, title: 'Device Management',  subtitle: 'See devices logged in',         onTap: () => _snack(context, 'Device management opened')),
-      const _TileDivider(),
-      _Tile(icon: LucideIcons.logOut,            title: 'Logout All Devices', subtitle: 'Sign out everywhere',           onTap: () => _snack(context, 'Logged out from all devices')),
-      const _TileDivider(),
-      _Tile(icon: LucideIcons.userX,             title: 'Delete Account',     subtitle: 'Permanently remove your account', destructive: true, onTap: () => _snack(context, 'Account deletion requested')),
+      _Tile(
+        icon: LucideIcons.userX,
+        title: 'Delete Account',
+        subtitle: 'Permanently remove your account',
+        destructive: true,
+        onTap: _confirmDeleteAccount,
+      ),
     ]),
   );
 }

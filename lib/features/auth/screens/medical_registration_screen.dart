@@ -286,7 +286,61 @@ class _MedicalRegistrationScreenState
       setState(() => onPathUpdated(result.files.single.path!));
     }
   }
+  
+  Future<void> _showImagePickerOptions(
+  ValueChanged<String> onPathUpdated,
+) async {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(20),
+      ),
+    ),
+    builder: (_) {
+      return SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
 
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt_outlined,
+              ),
+              title: const Text("Take Photo"),
+              onTap: () {
+                Navigator.pop(context);
+
+                _pickImage(
+                  ImageSource.camera,
+                  onPathUpdated,
+                );
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+              ),
+              title: const Text(
+                "Choose From Gallery",
+              ),
+              onTap: () {
+                Navigator.pop(context);
+
+                _pickImage(
+                  ImageSource.gallery,
+                  onPathUpdated,
+                );
+              },
+            ),
+
+          ],
+        ),
+      );
+    },
+  );
+}
   // ─────────────────────────────────────────
   // NAVIGATION — WidgetsBinding se jumpToPage call karo
   // ─────────────────────────────────────────
@@ -298,6 +352,20 @@ class _MedicalRegistrationScreenState
     if (!isTestingMode && form != null && !form.validate()) {
       return;
     }
+
+  // Step 1 Profile Photo Mandatory
+if (_currentStep == 0 && _profilePhotoPath.isEmpty) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text(
+        "Please upload your profile photo",
+      ),
+      backgroundColor: kErrorColor,
+    ),
+  );
+
+  return;
+}
 
       // Step 2 GPS Location Mandatory
   if (_currentStep == 1 &&
@@ -744,12 +812,16 @@ class _MedicalRegistrationScreenState
               ImageSource.gallery, (path) => setState(() => _medicalBanner = path)),
         ),
         const SizedBox(height: 16),
-        _SectionLabel(label: 'Medical Store Photos (Camera)'),
+        _SectionLabel(label: 'Medical Store Photos'),
         _MultiPhotoUpload(
           photos: _medicalPhotos,
-          onAdd: () => _pickImage(ImageSource.camera, (path) {
-            setState(() => _medicalPhotos.add(path));
-          }),
+          onAdd: () => _showImagePickerOptions(
+          (path) {
+            setState(() {
+              _medicalPhotos.add(path);
+            });
+          },
+        ),
           onRemove: (i) => setState(() => _medicalPhotos.removeAt(i)),
         ),
         const SizedBox(height: 20),
