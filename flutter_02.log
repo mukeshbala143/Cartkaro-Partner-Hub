@@ -1,0 +1,68 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter pub get --no-example
+
+## exception
+
+FileSystemException: FileSystemException: readInto failed, path = '/Users/mbala/Desktop/cartkaro_partner_hub/ios/Runner/GeneratedPluginRegistrant.h' (OS Error: Operation timed out, errno = 60)
+
+```
+#0      _checkForErrorResponse (dart:io/common.dart:58:9)
+#1      _RandomAccessFile.readInto.<anonymous closure> (dart:io/file_impl.dart:912:7)
+#2      _rootRunUnary (dart:async/zone_root.dart:48:47)
+#3      _CustomZone.runUnary (dart:async/zone.dart:733:19)
+<asynchronous suspension>
+#4      _File.readAsBytes.readSized.read.<anonymous closure> (dart:io/file_impl.dart:625:78)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[!] Flutter (Channel stable, 3.41.9, on macOS 26.5.1 25F80 darwin-arm64, locale en-IN) [1,046ms]
+    • Flutter version 3.41.9 on channel stable at /opt/homebrew/share/flutter
+    ! The flutter binary is not on your path. Consider adding /opt/homebrew/share/flutter/bin to your path.
+    ! The dart binary is not on your path. Consider adding /opt/homebrew/share/flutter/bin to your path.
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision 00b0c91f06 (8 weeks ago), 2026-04-29 10:03:19 -0700
+    • Engine revision 42d3d75a56
+    • Dart version 3.11.5
+    • DevTools version 2.54.2
+    • Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop, enable-android, enable-ios, cli-animations, enable-native-assets, omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+    • If those were intentional, you can disregard the above warnings; however it is recommended to use "git" directly to perform update checks and upgrades.
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 36.1.0) [7.5s]
+    • Android SDK at /Users/mbala/Library/Android/sdk
+    • Emulator version 36.3.10.0 (build_id 14472402) (CL:N/A)
+    • Platform android-36, build-tools 36.1.0
+    • Java binary at: /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java
+      This is the JDK bundled with the latest Android Studio installation on this machine.
+      To manually set the JDK path, use: `flutter config --jdk-dir="path/to/jdk"`.
+    • Java version OpenJDK Runtime Environment (build 21.0.8+-14196175-b1038.72)
+    • All Android licenses accepted.
+
+[!] Xcode - develop for iOS and macOS (Xcode 26.5) [1,792ms]
+    • Xcode at /Applications/Xcode.app/Contents/Developer
+    • Build 17F42
+    ✗ CocoaPods not installed.
+        CocoaPods is a package manager for iOS or macOS platform code.
+        Without CocoaPods, plugins will not work on iOS or macOS.
+        For more info, see https://flutter.dev/to/platform-plugins
+      For installation instructions, see https://guides.cocoapods.org/using/getting-started.html#installation
+
+[✓] Chrome - develop for the web [14ms]
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+[✓] Connected device (3 available) [9.9s]
+    • RMX3741 (mobile) • WSORS8UCTS457DKJ • android-arm64  • Android 15 (API 35)
+    • macOS (desktop)  • macos            • darwin-arm64   • macOS 26.5.1 25F80 darwin-arm64
+    • Chrome (web)     • chrome           • web-javascript • Google Chrome 148.0.7778.217
+
+[✓] Network resources [4.8s]
+    • All expected network resources are available.
+
+! Doctor found issues in 2 categories.
+```

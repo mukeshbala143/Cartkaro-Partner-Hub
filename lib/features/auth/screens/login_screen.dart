@@ -782,7 +782,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 
-  // ── Shared widgets ────────────────────────────────────────────
+  // ── Shared widgets ───────────────────────────────────────────
   Widget _fieldLabel(String text) => Text(
         text,
         style: const TextStyle(
