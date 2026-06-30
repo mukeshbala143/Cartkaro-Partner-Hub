@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -48,30 +52,67 @@ class FloatRect {
 }
 
 const List<FloatRect> kFloatRects = [
-  FloatRect(w: 280, h: 340, x: -60, y: -60, radius: 40, opacity: 0.70, delay: Duration.zero),
-  FloatRect(w: 200, h: 250, x: -80, y: 80,  radius: 50, opacity: 0.45, delay: Duration(seconds: 3)),
-  FloatRect(w: 140, h: 180, x: 20,  y: 300, radius: 30, opacity: 0.30, delay: Duration(seconds: 5)),
-  FloatRect(w: 100, h: 120, x: -30, y: -80, radius: 22, opacity: 0.25, delay: Duration(seconds: 2)),
+  FloatRect(
+    w: 280,
+    h: 340,
+    x: -60,
+    y: -60,
+    radius: 40,
+    opacity: 0.70,
+    delay: Duration.zero,
+  ),
+  FloatRect(
+    w: 200,
+    h: 250,
+    x: -80,
+    y: 80,
+    radius: 50,
+    opacity: 0.45,
+    delay: Duration(seconds: 3),
+  ),
+  FloatRect(
+    w: 140,
+    h: 180,
+    x: 20,
+    y: 300,
+    radius: 30,
+    opacity: 0.30,
+    delay: Duration(seconds: 5),
+  ),
+  FloatRect(
+    w: 100,
+    h: 120,
+    x: -30,
+    y: -80,
+    radius: 22,
+    opacity: 0.25,
+    delay: Duration(seconds: 2),
+  ),
 ];
 
 // ══════════════════════════════════════════════════════════════════
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 enum _Step { phone, otp, success }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   _Step _step = _Step.phone;
   bool _loading = false;
   String _error = '';
   Country _country = kCountries[0];
+  String? _verificationId;
+  int? _forceResendingToken;
 
   final _phoneCtrl = TextEditingController();
-  final List<TextEditingController> _otpCtrl =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpCtrl = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _otpFocus = List.generate(6, (_) => FocusNode());
 
   // Animations
@@ -124,51 +165,193 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _stepCtrl.dispose();
     _resendTimer?.cancel();
     _phoneCtrl.dispose();
-    for (final c in _otpCtrl) c.dispose();
-    for (final f in _otpFocus) f.dispose();
+    for (final c in _otpCtrl) {
+      c.dispose();
+    }
+    for (final f in _otpFocus) {
+      f.dispose();
+    }
     super.dispose();
   }
 
   // ── OTP logic ─────────────────────────────────────────────────
+  String get _phoneNumber => '${_country.code}${_phoneCtrl.text.trim()}';
+
+  String? _phoneValidationError(String phone) {
+    if (phone.length != 10) {
+      return 'Enter a valid 10-digit number';
+    }
+    if (_country.code == '+91' && !RegExp(r'^[6-9]').hasMatch(phone)) {
+      return 'Enter a valid Indian mobile number';
+    }
+    return null;
+  }
+
+  Future<String?> _networkReadinessError() async {
+    try {
+      final connectivity = await Connectivity().checkConnectivity();
+      final hasNetwork = connectivity.any(
+        (result) => result != ConnectivityResult.none,
+      );
+      if (!hasNetwork) {
+        return 'No internet connection. Please try again.';
+      }
+    } on PlatformException {
+      debugPrint('Connectivity check failed; trying Google reachability.');
+    }
+
+    try {
+      await Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 5),
+          receiveTimeout: const Duration(seconds: 5),
+        ),
+      ).headUri(
+        Uri.parse('https://www.googleapis.com'),
+        options: Options(validateStatus: (_) => true),
+      );
+      return null;
+    } on DioException catch (e) {
+      debugPrint('Google API reachability failed: ${e.type} - ${e.message}');
+      return 'Cannot reach Google services. Check DNS, VPN, Private DNS, or emulator internet.';
+    } catch (e) {
+      debugPrint('Google API reachability failed: $e');
+      return 'Cannot reach Google services. Please check internet and try again.';
+    }
+  }
+
+  String _authErrorMessage(FirebaseAuthException e) {
+    late final String message;
+    switch (e.code) {
+      case 'network-request-failed':
+        message = 'Network connection failed. Please check internet and try again.';
+        break;
+      case 'invalid-phone-number':
+        message = 'Enter a valid phone number with country code.';
+        break;
+      case 'too-many-requests':
+        message = 'Too many OTP requests. Please wait and try again later.';
+        break;
+      case 'quota-exceeded':
+        message = 'OTP limit reached for now. Please try again later.';
+        break;
+      case 'operation-not-allowed':
+        message = 'Phone login is not enabled in Firebase Authentication.';
+        break;
+      case 'app-not-authorized':
+      case 'missing-client-identifier':
+        message =
+            'This app is not authorized for phone login. Add SHA-1/SHA-256 in Firebase and download the updated google-services.json.';
+        break;
+      case 'invalid-verification-code':
+        message = 'Wrong OTP. Please check the code and try again.';
+        break;
+      case 'session-expired':
+        message = 'OTP expired. Please request a new code.';
+        break;
+      default:
+        message = e.message ?? 'Could not send OTP. Please try again.';
+    }
+    return kDebugMode ? '$message (${e.code})' : message;
+  }
+
+  void _setAuthError(FirebaseAuthException e) {
+    debugPrint('Firebase phone auth failed: ${e.code} - ${e.message}');
+    setState(() {
+      _loading = false;
+      _error = _authErrorMessage(e);
+    });
+  }
+
   void _onOtpChanged(String value, int index) {
+    if (value.isEmpty && index > 0) {
+      _otpFocus[index - 1].requestFocus();
+      return;
+    }
     if (value.isNotEmpty && index < 5) {
       _otpFocus[index + 1].requestFocus();
     }
     final full = _otpCtrl.map((c) => c.text).join();
-    if (full.length == 6) _verifyOtp();
-  }
-
-  void _onOtpKey(RawKeyEvent event, int index) {
-    if (event is RawKeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.backspace &&
-        _otpCtrl[index].text.isEmpty &&
-        index > 0) {
-      _otpFocus[index - 1].requestFocus();
-      _otpCtrl[index - 1].clear();
+    if (full.length == 6) {
+      _verifyOtp();
     }
   }
 
   // ── Actions ───────────────────────────────────────────────────
-  Future<void> _sendOtp() async {
-    final ph = _phoneCtrl.text;
-    if (ph.length != 10) {
-      setState(() => _error = 'Enter a valid 10-digit number');
+  Future<void> _sendOtp({bool forceResend = false}) async {
+    final phone = _phoneCtrl.text.trim();
+    final validationError = _phoneValidationError(phone);
+    if (validationError != null) {
+      setState(() => _error = validationError);
       return;
     }
-    if (ph != '1111111111') {
-      setState(() => _error = 'Use 1111111111 for testing');
+    final networkError = await _networkReadinessError();
+    if (networkError != null) {
+      setState(() => _error = networkError);
       return;
     }
     setState(() {
       _loading = true;
       _error = '';
     });
-    await Future.delayed(const Duration(milliseconds: 900));
-    _transitionTo(_Step.otp);
-    setState(() => _loading = false);
-    _startResend();
-    Future.delayed(
-        const Duration(milliseconds: 120), () => _otpFocus[0].requestFocus());
+    for (final controller in _otpCtrl) {
+      controller.clear();
+    }
+
+    try {
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: _phoneNumber,
+        forceResendingToken: forceResend ? _forceResendingToken : null,
+        verificationCompleted: (credential) async {
+          try {
+            await FirebaseAuth.instance.signInWithCredential(credential);
+            if (!mounted) return;
+            _resendTimer?.cancel();
+            _transitionTo(_Step.success);
+          } on FirebaseAuthException catch (e) {
+            if (!mounted) return;
+            _setAuthError(e);
+          } catch (e) {
+            if (!mounted) return;
+            debugPrint('Firebase auto verification failed: $e');
+            setState(() {
+              _loading = false;
+              _error = 'Auto verification failed. Please enter OTP manually.';
+            });
+          }
+        },
+        verificationFailed: (e) {
+          if (!mounted) return;
+          _setAuthError(e);
+        },
+        codeSent: (verificationId, resendToken) {
+          if (!mounted) return;
+          debugPrint('Firebase phone auth code sent to $_phoneNumber');
+          _verificationId = verificationId;
+          _forceResendingToken = resendToken;
+          _transitionTo(_Step.otp);
+          setState(() => _loading = false);
+          _startResend();
+          Future.delayed(const Duration(milliseconds: 120), () {
+            if (mounted) _otpFocus[0].requestFocus();
+          });
+        },
+        codeAutoRetrievalTimeout: (verificationId) {
+          _verificationId = verificationId;
+        },
+        timeout: const Duration(seconds: 60),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      _setAuthError(e);
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Firebase phone auth request failed: $e');
+      setState(() {
+        _loading = false;
+        _error = 'Could not send OTP. Please try again.';
+      });
+    }
   }
 
   Future<void> _verifyOtp() async {
@@ -177,22 +360,39 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       setState(() => _error = 'Enter all 6 digits');
       return;
     }
-    if (otp != '123456') {
-      setState(() => _error = 'Wrong OTP. Use 123456 for testing');
+    final verificationId = _verificationId;
+    if (verificationId == null) {
+      setState(() => _error = 'Please request OTP again');
       return;
     }
     setState(() {
       _loading = true;
       _error = '';
     });
-    await Future.delayed(const Duration(milliseconds: 800));
-    _resendTimer?.cancel();
-    _transitionTo(_Step.success);
-    setState(() => _loading = false);
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      if (!mounted) return;
+      _resendTimer?.cancel();
+      _transitionTo(_Step.success);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _error = _authErrorMessage(e));
+    } catch (e) {
+      if (!mounted) return;
+      debugPrint('Firebase OTP verification failed: $e');
+      setState(() => _error = 'Could not verify OTP. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _transitionTo(_Step next) {
     _stepCtrl.reverse().then((_) {
+      if (!mounted) return;
       setState(() {
         _step = next;
         _error = '';
@@ -203,7 +403,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   void _goBack() {
     _resendTimer?.cancel();
-    for (final c in _otpCtrl) c.clear();
+    for (final c in _otpCtrl) {
+      c.clear();
+    }
+    _verificationId = null;
     _transitionTo(_Step.phone);
   }
 
@@ -240,9 +443,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Hero section — takes all available space above the card
-                Expanded(
-                  child: _buildHeroSection(),
-                ),
+                Expanded(child: _buildHeroSection()),
 
                 // Form card — slides up, hugs content, keyboard pushes it up
                 // naturally because Scaffold resizes its body
@@ -268,7 +469,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       final phase = (e.key * 2.5) % (2 * math.pi);
       return AnimatedBuilder(
         animation: _heroCtrl,
-        builder: (_, __) {
+        builder: (context, _) {
           final t = _heroCtrl.value;
           final dy = math.sin((t * math.pi * 2) + phase) * 14.0;
           final rot = math.sin((t * math.pi * 2) + phase) * 0.02;
@@ -355,18 +556,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             RichText(
               text: const TextSpan(
                 style: TextStyle(
-                    fontFamily: 'Sora',
-                    fontSize: 36,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -1.2,
-                    height: 1.07),
+                  fontFamily: 'Sora',
+                  fontSize: 36,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -1.2,
+                  height: 1.07,
+                ),
                 children: [
                   TextSpan(
-                      text: 'Sell more,\nstress ',
-                      style: TextStyle(color: kWhite)),
+                    text: 'Sell more,\nstress ',
+                    style: TextStyle(color: kWhite),
+                  ),
                   TextSpan(
-                      text: 'less.',
-                      style: TextStyle(color: kAccentBlue)),
+                    text: 'less.',
+                    style: TextStyle(color: kAccentBlue),
+                  ),
                 ],
               ),
             ),
@@ -374,9 +578,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             Text(
               'Your store. Your rules.\nStart selling in minutes.',
               style: TextStyle(
-                  color: Colors.white.withOpacity(0.52),
-                  fontSize: 14.5,
-                  height: 1.6),
+                color: Colors.white.withOpacity(0.52),
+                fontSize: 14.5,
+                height: 1.6,
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -402,13 +607,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: Colors.white.withOpacity(0.12)),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, color: kAccentBlue, size: 13),
-        const SizedBox(width: 6),
-        Text(label,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: kAccentBlue, size: 13),
+          const SizedBox(width: 6),
+          Text(
+            label,
             style: const TextStyle(
-                color: kWhite, fontSize: 12, fontWeight: FontWeight.w600)),
-      ]),
+              color: kWhite,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -452,23 +665,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Widget _buildStepBar() {
-    return Row(children: [
-      Expanded(flex: 2, child: _stepSegment(true)),
-      const SizedBox(width: 6),
-      Expanded(
+    return Row(
+      children: [
+        Expanded(flex: 2, child: _stepSegment(true)),
+        const SizedBox(width: 6),
+        Expanded(
           flex: _step == _Step.otp ? 2 : 1,
-          child: _stepSegment(_step == _Step.otp)),
-    ]);
+          child: _stepSegment(_step == _Step.otp),
+        ),
+      ],
+    );
   }
 
   Widget _stepSegment(bool active) => AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        height: 4,
-        decoration: BoxDecoration(
-          color: active ? kBrand : kBorder,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      );
+    duration: const Duration(milliseconds: 350),
+    height: 4,
+    decoration: BoxDecoration(
+      color: active ? kBrand : kBorder,
+      borderRadius: BorderRadius.circular(2),
+    ),
+  );
 
   Widget _buildError() {
     return Container(
@@ -479,17 +695,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFFECACA)),
       ),
-      child: Row(children: [
-        const Icon(LucideIcons.alertCircle,
-            color: Color(0xFFE53E3E), size: 16),
-        const SizedBox(width: 8),
-        Expanded(
-            child: Text(_error,
-                style: const TextStyle(
-                    color: Color(0xFFC53030),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600))),
-      ]),
+      child: Row(
+        children: [
+          const Icon(
+            LucideIcons.alertCircle,
+            color: Color(0xFFE53E3E),
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _error,
+              style: const TextStyle(
+                color: Color(0xFFC53030),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -502,11 +727,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const Text(
           'Enter your\nmobile number',
           style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: kBodyText,
-              letterSpacing: -0.5,
-              height: 1.2),
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: kBodyText,
+            letterSpacing: -0.5,
+            height: 1.2,
+          ),
         ),
         const SizedBox(height: 5),
         const Text(
@@ -518,14 +744,19 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 7),
         _buildPhoneField(),
         const SizedBox(height: 8),
-        Row(children: [
-          Icon(LucideIcons.info,
-              size: 13, color: kSubText.withOpacity(0.7)),
-          const SizedBox(width: 5),
-          Text('Works with any Indian mobile number',
+        Row(
+          children: [
+            Icon(LucideIcons.info, size: 13, color: kSubText.withOpacity(0.7)),
+            const SizedBox(width: 5),
+            Text(
+              'Works with any Indian mobile number',
               style: TextStyle(
-                  fontSize: 11.5, color: kSubText.withOpacity(0.75))),
-        ]),
+                fontSize: 11.5,
+                color: kSubText.withOpacity(0.75),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 22),
         _buildCtaButton(
           label: 'Get OTP',
@@ -545,58 +776,70 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: kBorder, width: 1.5),
       ),
-      child: Row(children: [
-        // Country picker
-        GestureDetector(
-          onTap: _showCountryPicker,
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: const BoxDecoration(
-              border:
-                  Border(right: BorderSide(color: kBorder, width: 1.5)),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(_country.flag,
-                  style: const TextStyle(fontSize: 20)),
-              const SizedBox(width: 6),
-              Text(_country.code,
-                  style: const TextStyle(
+      child: Row(
+        children: [
+          // Country picker
+          GestureDetector(
+            onTap: _showCountryPicker,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: const BoxDecoration(
+                border: Border(right: BorderSide(color: kBorder, width: 1.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_country.flag, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 6),
+                  Text(
+                    _country.code,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: kBodyText)),
-              const SizedBox(width: 4),
-              const Icon(LucideIcons.chevronDown,
-                  size: 13, color: kSubText),
-            ]),
+                      color: kBodyText,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    LucideIcons.chevronDown,
+                    size: 13,
+                    color: kSubText,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        // Phone input
-        Expanded(
-          child: TextField(
-            controller: _phoneCtrl,
-            keyboardType: TextInputType.phone,
-            maxLength: 10,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(
+          // Phone input
+          Expanded(
+            child: TextField(
+              controller: _phoneCtrl,
+              keyboardType: TextInputType.phone,
+              maxLength: 10,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              style: const TextStyle(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w700,
                 color: kBodyText,
-                letterSpacing: 0.4),
-            decoration: InputDecoration(
-              hintText: '10-digit number',
-              hintStyle: TextStyle(
+                letterSpacing: 0.4,
+              ),
+              decoration: InputDecoration(
+                hintText: '10-digit number',
+                hintStyle: TextStyle(
                   color: kSubText.withOpacity(0.5),
                   fontWeight: FontWeight.w400,
-                  fontSize: 14.5),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 15),
-              counterText: '',
+                  fontSize: 14.5,
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 15,
+                ),
+                counterText: '',
+              ),
             ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 
@@ -613,26 +856,35 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   }
 
   Widget _stat(String val, String label) => Expanded(
-        child: Column(children: [
-          Text(val,
-              style: const TextStyle(
-                  fontSize: 16.5,
-                  fontWeight: FontWeight.w800,
-                  color: kBodyText)),
-          const SizedBox(height: 2),
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11,
-                  color: kSubText,
-                  fontWeight: FontWeight.w600)),
-        ]),
-      );
+    child: Column(
+      children: [
+        Text(
+          val,
+          style: const TextStyle(
+            fontSize: 16.5,
+            fontWeight: FontWeight.w800,
+            color: kBodyText,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: kSubText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _vertDivider() => Container(
-      width: 1,
-      height: 32,
-      color: kBorder,
-      margin: const EdgeInsets.symmetric(horizontal: 4));
+    width: 1,
+    height: 32,
+    color: kBorder,
+    margin: const EdgeInsets.symmetric(horizontal: 4),
+  );
 
   // ── OTP step ─────────────────────────────────────────────────
   Widget _buildOtpStep() {
@@ -643,10 +895,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const Text(
           'Verify OTP',
           style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: kBodyText,
-              letterSpacing: -0.5),
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: kBodyText,
+            letterSpacing: -0.5,
+          ),
         ),
         const SizedBox(height: 5),
         Text(
@@ -658,20 +911,30 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 8),
         _buildOtpBoxes(),
         const SizedBox(height: 8),
-        Row(children: [
-          Icon(LucideIcons.clock,
-              size: 13, color: kSubText.withOpacity(0.7)),
-          const SizedBox(width: 5),
-          Text(
-            _resendSec > 0
-                ? 'Resend in ${_resendSec}s'
-                : 'Resend OTP',
-            style: TextStyle(
-                fontSize: 11.5,
-                color: kSubText.withOpacity(0.8),
-                fontWeight: FontWeight.w600),
-          ),
-        ]),
+        Row(
+          children: [
+            Icon(LucideIcons.clock, size: 13, color: kSubText.withOpacity(0.7)),
+            const SizedBox(width: 5),
+            TextButton(
+              onPressed: _resendSec > 0 || _loading
+                  ? null
+                  : () => _sendOtp(forceResend: true),
+              style: TextButton.styleFrom(
+                minimumSize: Size.zero,
+                padding: EdgeInsets.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                _resendSec > 0 ? 'Resend in ${_resendSec}s' : 'Resend OTP',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: _resendSec > 0 ? kSubText.withOpacity(0.8) : kBrand,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 22),
         _buildCtaButton(
           label: 'Verify & Continue',
@@ -681,14 +944,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         const SizedBox(height: 12),
         TextButton.icon(
           onPressed: _goBack,
-          icon: const Icon(LucideIcons.arrowLeft,
-              size: 15, color: kSubText),
+          icon: const Icon(LucideIcons.arrowLeft, size: 15, color: kSubText),
           label: const Text(
             'Change number',
             style: TextStyle(
-                fontSize: 13.5,
-                color: kSubText,
-                fontWeight: FontWeight.w600),
+              fontSize: 13.5,
+              color: kSubText,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -708,25 +971,22 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: kBorder, width: 1.5),
             ),
-            child: RawKeyboardListener(
-              focusNode: FocusNode(),
-              onKey: (e) => _onOtpKey(e, i),
-              child: TextField(
-                controller: _otpCtrl[i],
-                focusNode: _otpFocus[i],
-                keyboardType: TextInputType.number,
-                maxLength: 1,
-                textAlign: TextAlign.center,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                onChanged: (v) => _onOtpChanged(v, i),
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: kBrand),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  counterText: '',
-                ),
+            child: TextField(
+              controller: _otpCtrl[i],
+              focusNode: _otpFocus[i],
+              keyboardType: TextInputType.number,
+              maxLength: 1,
+              textAlign: TextAlign.center,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (v) => _onOtpChanged(v, i),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: kBrand,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                counterText: '',
               ),
             ),
           ),
@@ -745,8 +1005,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           tween: Tween(begin: 0, end: 1),
           duration: const Duration(milliseconds: 500),
           curve: Curves.elasticOut,
-          builder: (_, v, child) =>
-              Transform.scale(scale: v, child: child),
+          builder: (_, v, child) => Transform.scale(scale: v, child: child),
           child: Container(
             width: 72,
             height: 72,
@@ -754,17 +1013,21 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               color: Color(0xFFF0FFF4),
               shape: BoxShape.circle,
             ),
-            child: const Icon(LucideIcons.check,
-                size: 32, color: Color(0xFF22C55E)),
+            child: const Icon(
+              LucideIcons.check,
+              size: 32,
+              color: Color(0xFF22C55E),
+            ),
           ),
         ),
         const SizedBox(height: 20),
         const Text(
           "You're in!",
           style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: kBodyText),
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: kBodyText,
+          ),
         ),
         const SizedBox(height: 6),
         const Text(
@@ -784,13 +1047,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   // ── Shared widgets ───────────────────────────────────────────
   Widget _fieldLabel(String text) => Text(
-        text,
-        style: const TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            color: kBodyText,
-            letterSpacing: 0.3),
-      );
+    text,
+    style: const TextStyle(
+      fontSize: 11.5,
+      fontWeight: FontWeight.w700,
+      color: kBodyText,
+      letterSpacing: 0.3,
+    ),
+  );
 
   Widget _buildCtaButton({
     required String label,
@@ -819,21 +1083,26 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   width: 22,
                   height: 22,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation(kWhite)),
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(kWhite),
+                  ),
                 )
-              : Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(label,
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
                       style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
-                          color: kWhite,
-                          letterSpacing: 0.1)),
-                  const SizedBox(width: 10),
-                  Icon(icon,
-                      size: 17,
-                      color: Colors.white.withOpacity(0.8)),
-                ]),
+                        fontSize: 15.5,
+                        fontWeight: FontWeight.w700,
+                        color: kWhite,
+                        letterSpacing: 0.1,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(icon, size: 17, color: Colors.white.withOpacity(0.8)),
+                  ],
+                ),
         ),
       ),
     );
@@ -853,66 +1122,82 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           ),
         ),
         padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Container(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                  color: kBorder,
-                  borderRadius: BorderRadius.circular(2))),
-          const SizedBox(height: 18),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Select country',
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: kBodyText)),
+                color: kBorder,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          ...kCountries.map((c) {
-            final isSel = c.code == _country.code;
-            return InkWell(
-              onTap: () {
-                setState(() => _country = c);
-                Navigator.pop(context);
-              },
-              child: Container(
-                color: isSel ? const Color(0xFFF0F5FF) : null,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
-                child: Row(children: [
-                  Text(c.flag,
-                      style: const TextStyle(fontSize: 24)),
-                  const SizedBox(width: 14),
-                  Expanded(
-                      child: Text(c.name,
+            const SizedBox(height: 18),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Select country',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: kBodyText,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...kCountries.map((c) {
+              final isSel = c.code == _country.code;
+              return InkWell(
+                onTap: () {
+                  setState(() => _country = c);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  color: isSel ? const Color(0xFFF0F5FF) : null,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      Text(c.flag, style: const TextStyle(fontSize: 24)),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          c.name,
                           style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: isSel
-                                  ? FontWeight.w700
-                                  : FontWeight.w400,
-                              color: kBodyText))),
-                  Text(c.code,
-                      style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSel
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            color: kBodyText,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        c.code,
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: isSel ? kBrand : kSubText)),
-                  if (isSel) ...[
-                    const SizedBox(width: 8),
-                    const Icon(LucideIcons.check,
-                        size: 16, color: kBrand),
-                  ],
-                ]),
-              ),
-            );
-          }),
-          SizedBox(
-              height: MediaQuery.of(context).padding.bottom + 16),
-        ]),
+                          color: isSel ? kBrand : kSubText,
+                        ),
+                      ),
+                      if (isSel) ...[
+                        const SizedBox(width: 8),
+                        const Icon(LucideIcons.check, size: 16, color: kBrand),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            }),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+          ],
+        ),
       ),
     );
   }

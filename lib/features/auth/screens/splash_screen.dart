@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/constants/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -24,11 +25,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     
     _controller.forward();
 
-    // 3 seconds ke baad auto-navigate to PIN Login (Returning User)
-    // Jab backend lagega tab check karenge ki user logged in hai ya nahi
     Future.delayed(const Duration(seconds: 3), () {
-       //if (mounted) context.go('/pin-login');
-      if (mounted) context.go('/login'); // Abhi ke liye seedha login page pe bhej rahe hain 
+      if (!mounted) return;
+      final user = FirebaseAuth.instance.currentUser;
+      context.go(user == null ? '/login' : '/business-type');
     });
   }
 

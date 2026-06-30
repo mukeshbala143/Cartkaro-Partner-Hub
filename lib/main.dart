@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/routes/app_router.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const CartKaroPartnerApp());
 }
 
 class CartKaroPartnerApp extends StatelessWidget {
-  const CartKaroPartnerApp({Key? key}) : super(key: key);
+  const CartKaroPartnerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class CartKaroPartnerApp extends StatelessWidget {
         return MultiProvider(
           providers: [
             // Add your state management providers here later (e.g., AuthProvider, ProductProvider)
-            Provider(create: (_) => ()), 
+            Provider(create: (_) => ()),
           ],
           child: MaterialApp.router(
             title: 'CartKaro Partner Hub',

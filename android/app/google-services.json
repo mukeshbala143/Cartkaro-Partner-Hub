@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "474918918569",
+    "project_id": "cartkaro-404b6",
+    "storage_bucket": "cartkaro-404b6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474918918569:android:fadbe9ada64e2969b1ccb8",
+        "android_client_info": {
+          "package_name": "com.example.cartkaro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPvPS3_DXFrCsDGI0yx4YxLu2qzSpQ7wI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

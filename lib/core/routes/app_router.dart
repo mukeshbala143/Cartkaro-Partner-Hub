@@ -13,109 +13,63 @@ import '../../features/dashboard/screens/dashboard_layout.dart';
 
 import '../../features/auth/screens/reset_pin_screen.dart';
 
-
 class AppRouter {
-
   static final router = GoRouter(
-
-    initialLocation: '/',
-
+    initialLocation: '/login',
 
     routes: [
-
+      GoRoute(path: '/', redirect: (context, state) => '/login'),
 
       GoRoute(
-        path: '/',
-        builder: (context, state) =>
-            const SplashScreen(),
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
       ),
-
-
 
       // Mobile OTP Login
-      GoRoute(
-        path: '/login',
-        builder: (context, state) =>
-            const LoginScreen(),
-      ),
-
-
-
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
 
       // Existing Partner PIN Login
       GoRoute(
         path: '/pin-login',
-        builder: (context, state) =>
-            const PinLoginScreen(),
+        builder: (context, state) => const PinLoginScreen(),
       ),
-
-
-
 
       // Choose Grocery / Restaurant / Medical
       GoRoute(
         path: '/business-type',
-        builder: (context, state) =>
-            const BusinessTypeScreen(),
+        builder: (context, state) => const BusinessTypeScreen(),
       ),
-
-
-
-
 
       // Grocery Registration
       GoRoute(
         path: '/register/grocery',
-        builder: (context, state) =>
-            const GroceryRegistrationScreen(),
+        builder: (context, state) => const GroceryRegistrationScreen(),
       ),
-
-
-
 
       // Restaurant Registration
       GoRoute(
         path: '/register/restaurant',
-        builder: (context, state) =>
-            const RestaurantRegistrationScreen(),
+        builder: (context, state) => const RestaurantRegistrationScreen(),
       ),
-
-
-
 
       // Medical Registration
       GoRoute(
         path: '/register/medical',
-        builder: (context, state) =>
-            const MedicalRegistrationScreen(),
+        builder: (context, state) => const MedicalRegistrationScreen(),
       ),
-
-
-
-
 
       // Default Dashboard
       GoRoute(
         path: '/dashboard',
         builder: (context, state) =>
-            const DashboardLayout(
-              businessType: "grocery",
-            ),
+            const DashboardLayout(businessType: "grocery"),
       ),
-
-
-
 
       // Reset PIN
       GoRoute(
         path: '/reset-pin',
-        builder: (context, state) =>
-            const ResetPinScreen(),
+        builder: (context, state) => const ResetPinScreen(),
       ),
-
-
     ],
-
   );
-
 }
